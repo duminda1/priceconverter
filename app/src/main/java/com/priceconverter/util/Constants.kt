@@ -1,0 +1,24 @@
+package com.priceconverter.utils
+
+object Constants {
+    const val DEFAULT_BASE_CURRENCY = "USD"
+    const val DEFAULT_TARGET_CURRENCY = "AUD"
+    const val EXCHANGE_API_BASE_URL = "https://api.exchangeratesapi.io/v1/"
+    const val EXCHANGE_API_SERVICE = "exchangeratesapi.io"
+    const val FREE_PLAN_LIMIT = 100
+    const val PREFS_NAME = "price_converter_prefs"
+    const val PREFS_SECURE_NAME = "price_converter_secure_prefs"
+    const val PREFS_SELECTED_CURRENCIES = "selected_currencies"
+    const val PREFS_API_KEY = "api_key"
+    const val PREFS_SERVICE = "rate_service"
+    const val PREFS_FREE_PLAN = "free_plan"
+    const val PREFS_REALTIME_ENABLED = "realtime_enabled"
+    const val PREFS_LIVE_SCAN_ENABLED = "live_scan_enabled"
+    const val PREFS_USAGE_MONTH = "usage_month"
+    const val PREFS_USAGE_COUNT = "usage_count"
+    const val PREFS_USAGE_WARN_50 = "usage_warn_50"
+    const val PREFS_USAGE_WARN_75 = "usage_warn_75"
+    const val PREFS_USAGE_WARN_90 = "usage_warn_90"
+    const val PREFS_SAVED_RATES = "saved_rates"
+    const val PREFS_MANUAL_RATES = "manual_rates"
+}
