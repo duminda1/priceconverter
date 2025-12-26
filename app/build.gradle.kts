@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.priceconverter"
+    namespace = "com.priceconverter"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.priceconverter"
+        applicationId = "com.priceconverter"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -96,4 +96,10 @@ dependencies {
 
     // Optional: for logging network requests
     implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.11")
+
+    // EncryptedSharedPreferences for API keys
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // Material icons for dropdown indicators
+    implementation("androidx.compose.material:material-icons-extended")
 }
