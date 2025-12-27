@@ -1,0 +1,189 @@
+# PocketCurrency Help
+
+Welcome to **PocketCurrency** 👋
+PocketCurrency helps you quickly understand what prices really cost in your own currency while travelling.
+
+It’s designed to be simple, reliable, and easy to use — even without internet access.
+
+---
+
+## 🌍 What does PocketCurrency do?
+
+PocketCurrency converts prices from one currency to another so you can:
+
+- Shop with confidence
+- Avoid overpaying
+- Understand prices instantly while travelling
+
+Just enter a price (or scan one), and PocketCurrency does the rest.
+
+---
+
+## 🔢 How do I convert a price?
+
+1. Enter the price you see
+2. Choose the local currency
+3. Choose your home currency
+4. Tap **Convert**
+
+The converted price appears instantly.
+
+Tip: Use the swap button between the currency fields to flip them quickly.
+
+---
+
+## 🏠 Home & Destination Currencies
+
+PocketCurrency uses two defaults to save time:
+
+- **Home currency** is the default **To** currency
+- **Destination currency** is the default **From** currency
+
+Home currency is set the first time based on your country, and you can change it anytime in **Settings**.
+Destination currency can auto-detect based on your current country, or you can override it manually.
+
+---
+
+## ✅ Service status
+
+After you convert, PocketCurrency shows a simple status line so you always know what’s being used:
+
+- Using live price updates
+- Using saved rates (offline)
+- Using manual rates
+
+It also shows when the rate was last updated.
+
+---
+
+## 📷 How does price scanning work?
+
+PocketCurrency can scan prices using your camera.
+
+1. Turn on **Scan**
+2. Point your camera at a price
+3. The app detects the number and converts it automatically
+
+If a currency symbol or code is detected with high confidence, PocketCurrency will update the **From** currency automatically and show a small “Detected EUR” hint.
+
+💡 Tip: Make sure the price is clear and well-lit for best results.
+
+---
+
+## 📡 Live, Saved, and Manual Rates
+
+PocketCurrency uses different types of rates depending on what’s available.
+
+### Live rates
+- Updated automatically when internet is available
+- Most accurate option
+
+### Saved rates
+- Last known rate stored on your phone
+- Used when you’re offline
+- Works both directions (a saved USD→AUD rate can be used for AUD→USD)
+
+### Manual rates
+- Rates you enter yourself
+- Useful if you want full control
+- Works both directions (a manual USD→AUD rate can be used for AUD→USD)
+
+You’ll always see:
+- Which rate is being used
+- When it was last updated
+
+If Live rates are enabled, PocketCurrency tries **Live → Saved → Manual** in that order.
+
+---
+
+## ✈️ Can I use PocketCurrency without internet?
+
+Yes! PocketCurrency works **offline**.
+
+When there’s no internet:
+- Saved rates are used automatically
+- Manual rates still work
+- The app shows when the rate was last updated
+
+Perfect for flights, roaming-free travel, and remote areas.
+
+---
+
+## 🔄 What are “Price updates”?
+
+Price updates allow PocketCurrency to automatically refresh exchange rates when you’re online.
+
+This is **optional** — the app works without it.
+
+### Recommended option (easy)
+- Use the built-in price update service
+- No setup required
+
+### Advanced option (optional)
+Some users prefer to use their own service.
+
+To do this:
+1. Visit https://exchangerate.host
+2. Create a free account
+3. Copy your API key
+4. Paste it into **Settings → Price updates**
+
+If anything goes wrong, PocketCurrency safely falls back to saved or manual rates.
+
+---
+
+## ⚠️ What if something isn’t working?
+
+Here are some common situations:
+
+### No internet connection
+- PocketCurrency switches to saved or manual rates automatically
+
+### Invalid API key
+- The app continues using saved rates
+- You’ll see a helpful message explaining what happened
+
+### Camera not working
+- Check camera permissions
+- Make sure Scan is enabled
+
+---
+
+## ♿ Accessibility
+
+PocketCurrency is built to be accessible for everyone:
+
+- Large, readable text
+- High-contrast colors
+- Screen reader support
+- Simple, clear language
+
+---
+
+## 🔐 Privacy & Safety
+
+- PocketCurrency does not collect personal data
+- No tracking or analytics
+- API keys are never stored in source code
+- All data stays on your device
+
+---
+
+## ❤️ Tips for Travellers
+
+- Save rates before flying
+- Use Scan while shopping
+- Check the “last updated” time for peace of mind
+- Use manual rates if you prefer full control
+
+---
+
+## 📬 Need more help?
+
+PocketCurrency is designed to be simple — but if you’re ever unsure:
+
+- Check this Help section
+- Review the rate source shown on screen
+- You’re always in control
+
+Safe travels ✈️

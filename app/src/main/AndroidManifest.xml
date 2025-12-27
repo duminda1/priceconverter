@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.priceconverter">
+    package="com.pocketcurrency">
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
@@ -12,10 +12,10 @@
 
     <application
         android:allowBackup="true"
-        android:label="Price Converter"
+        android:label="PocketCurrency"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:theme="@style/Theme.Priceconverter">
+        android:theme="@style/Theme.PocketCurrency">
         
         <activity
             android:name=".MainActivity"
