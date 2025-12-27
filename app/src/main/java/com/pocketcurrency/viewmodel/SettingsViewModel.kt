@@ -32,7 +32,8 @@ data class SettingsUiState(
     val usageWarning: String? = null,
     val savedRates: List<CurrencyPairRate> = emptyList(),
     val manualRates: List<CurrencyPairRate> = emptyList(),
-    val isVerifying: Boolean = false
+    val isVerifying: Boolean = false,
+    val isRefreshingSavedRates: Boolean = false
 )
 
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -191,6 +192,58 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun removeSavedRate(from: String, to: String) {
         settingsRepository.removeSavedRate(from, to)
         refreshState()
+    }
+
+    fun refreshSavedRates() {
+        val savedRates = settingsRepository.getSavedRates()
+        if (savedRates.isEmpty()) {
+            _uiState.value = _uiState.value.copy(actionStatus = "No saved rates to refresh.")
+            return
+        }
+        if (_uiState.value.isRefreshingSavedRates) {
+            return
+        }
+
+        _uiState.value = _uiState.value.copy(
+            isRefreshingSavedRates = true,
+            actionStatus = "Refreshing saved rates..."
+        )
+
+        viewModelScope.launch {
+            var refreshedCount = 0
+            var lastWarning: String? = null
+            var firstError: String? = null
+
+            savedRates.forEach { rate ->
+                val result = rateUpdateRepository.fetchRate(
+                    fromCurrency = rate.from,
+                    toCurrency = rate.to,
+                    amount = 1.0,
+                    saveOnSuccess = true
+                )
+                if (result.rate != null) {
+                    refreshedCount += 1
+                } else if (firstError == null) {
+                    firstError = result.errorMessage
+                }
+                if (result.warningMessage != null) {
+                    lastWarning = result.warningMessage
+                }
+            }
+
+            val status = if (firstError == null) {
+                "Refreshed $refreshedCount/${savedRates.size} saved rates."
+            } else {
+                "Refreshed $refreshedCount/${savedRates.size} saved rates. ${firstError}"
+            }
+
+            _uiState.value = _uiState.value.copy(
+                isRefreshingSavedRates = false,
+                actionStatus = status,
+                usageWarning = lastWarning
+            )
+            refreshState()
+        }
     }
 
     fun upsertManualRate(from: String, to: String, rate: Double) {
