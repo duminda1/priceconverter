@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.priceconverter"
+    namespace = "com.pocketcurrency"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.priceconverter"
+        applicationId = "com.pocketcurrency"
         minSdk = 24
         targetSdk = 36
         versionCode = 1

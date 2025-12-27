@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "priceconverter"
+rootProject.name = "PocketCurrency"
 include(":app")

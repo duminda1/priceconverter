@@ -32,15 +32,15 @@ Designed for non-technical users, PocketCurrency works anywhere in the world, su
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/duminda1/priceconverter.git
-cd priceconverter
+git clone https://github.com/duminda1/PocketCurrency.git
+cd PocketCurrency
 ```
 
 ## Open in Android Studio
 
 1. Open Android Studio
 2. Select **Open**
-3. Choose the `priceconverter` project directory
+3. Choose the `PocketCurrency` project directory
 4. Wait for the Gradle sync to complete
 
 ---
