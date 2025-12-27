@@ -76,6 +76,7 @@ PocketCurrency uses different types of rates depending on what’s available.
 
 ### Live rates
 - Updated automatically when internet is available
+- Default live service is Frankfurter (no API key) and updates once per day around 16:00 CET
 - Most accurate option
 
 ### Saved rates
@@ -107,6 +108,12 @@ When there’s no internet:
 
 Perfect for flights, roaming-free travel, and remote areas.
 
+## 📴 Using PocketCurrency without internet
+
+- Saved rates work automatically
+- Manual rates always work
+- The app always shows when a rate was last updated
+
 ---
 
 ## 🔄 What are “Price updates”?
@@ -116,17 +123,19 @@ Price updates allow PocketCurrency to automatically refresh exchange rates when 
 This is **optional** — the app works without it.
 
 ### Recommended option (easy)
-- Use the built-in price update service
-- No setup required
+- Use the built-in Frankfurter service (default)
+- No API key required
+- Updates once per day around 16:00 CET
 
 ### Advanced option (optional)
-Some users prefer to use their own service.
+Some users prefer to use their own service for realtime updates.
 
 To do this:
-1. Visit https://exchangerate.host
-2. Create a free account
-3. Copy your API key
-4. Paste it into **Settings → Price updates**
+1. Open **Settings → Rate service** and select **ExchangeRatesAPI**
+2. Visit https://exchangeratesapi.io
+3. Create a free account
+4. Copy your API key
+5. Paste it into **Settings → API access**
 
 If anything goes wrong, PocketCurrency safely falls back to saved or manual rates.
 
@@ -140,8 +149,9 @@ Here are some common situations:
 - PocketCurrency switches to saved or manual rates automatically
 
 ### Invalid API key
+- Only applies if you switch to ExchangeRatesAPI
 - The app continues using saved rates
-- You’ll see a helpful message explaining what happened
+- You'll see a helpful message explaining what happened
 
 ### Camera not working
 - Check camera permissions

@@ -21,9 +21,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.outlined.Info
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -38,7 +41,6 @@ import com.pocketcurrency.ui.component.PriceCard
 import com.pocketcurrency.ui.Screen
 import com.pocketcurrency.viewmodel.ConversionState
 import com.pocketcurrency.viewmodel.MainViewModel
-import com.pocketcurrency.domain.model.ServiceStatus
 import com.pocketcurrency.domain.model.ServiceStatusType
 import com.pocketcurrency.utils.Constants
 import kotlinx.coroutines.Dispatchers
@@ -73,6 +75,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     var toCurrency by remember { mutableStateOf(defaultTo) }
     var hasCustomFrom by remember { mutableStateOf(false) }
     var hasCustomTo by remember { mutableStateOf(false) }
+    var showRateInfo by remember { mutableStateOf(false) }
     val normalizedFrom = fromCurrency.trim().uppercase()
     val normalizedTo = toCurrency.trim().uppercase()
     val manualRateAvailable = manualRates.any {
@@ -85,6 +88,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     }
     val canUseRealtime = serviceReady && realtimeAvailable
     val canConvert = manualRateAvailable || savedRateAvailable || canUseRealtime
+    val showRealtimeHelper = !realtimeEnabled || !canUseRealtime
     val amountValue = amountInput.toDoubleOrNull()
     val convertEnabled =
         amountValue != null && normalizedFrom.isNotBlank() && normalizedTo.isNotBlank()
@@ -136,6 +140,8 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
             MaterialTheme.colorScheme.background
         )
     )
+    // Soft reassurance accent for offline/saved cues.
+    val reassuranceColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f)
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -145,6 +151,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                 actions = {
                     TextButton(
                         onClick = { navController.navigate(Screen.Settings.route) },
+                        modifier = Modifier.heightIn(min = 48.dp),
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = MaterialTheme.colorScheme.primary
                         )
@@ -346,7 +353,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                         hasCustomFrom = true
                                         hasCustomTo = true
                                     },
-                                    modifier = Modifier.size(40.dp)
+                                    modifier = Modifier.size(48.dp)
                                 ) {
                                     Icon(
                                         imageVector = Icons.Filled.SwapHoriz,
@@ -373,17 +380,22 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(40.dp),
+                                    .heightIn(min = 48.dp)
+                                    .semantics { contentDescription = "Convert" },
                                 shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primary,
+                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                ),
                                 enabled = convertEnabled
                             ) {
                                 Text("Convert")
                             }
                             if (!canConvert) {
                                 val noRatesMessage = if (provider == Constants.PROVIDER_FRANKFURTER) {
-                                    "No rates available. Refresh a saved pair or add a manual rate."
+                                    "No rates available. Refresh a saved pair or add an offline rate."
                                 } else {
-                                    "No rates available. Add a manual rate or API key."
+                                    "No rates available. Add an offline rate or API key."
                                 }
                                 Text(
                                     noRatesMessage,
@@ -397,7 +409,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .heightIn(min = 140.dp)
+                            .heightIn(min = 110.dp)
                     ) {
                         when (conversionState) {
                             is ConversionState.Idle -> {
@@ -431,16 +443,59 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                             }
                             is ConversionState.Success ->
                                 Column(
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     serviceStatus?.let { status ->
-                                        Text(
-                                            text = formatServiceStatus(status),
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
+                                        val statusLabel = serviceStatusLabel(status.type)
+                                        val relativeUpdated = formatRelativeUpdated(status.lastUpdatedMillis)
+                                        val labelColor =
+                                            if (status.type == ServiceStatusType.LIVE) {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            } else {
+                                                reassuranceColor
+                                            }
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Text(
+                                                text = statusLabel,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = labelColor
+                                            )
+                                            Text(
+                                                text = "· Updated $relativeUpdated",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = reassuranceColor
+                                            )
+                                            IconButton(
+                                                onClick = { showRateInfo = true },
+                                                modifier = Modifier.size(48.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Outlined.Info,
+                                                    contentDescription = "Rate source information",
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                        }
                                     }
                                     PriceCard((conversionState as ConversionState.Success).result)
+                                    if (showRateInfo) {
+                                        AlertDialog(
+                                            onDismissRequest = { showRateInfo = false },
+                                            confirmButton = {
+                                                TextButton(onClick = { showRateInfo = false }) {
+                                                    Text("Got it")
+                                                }
+                                            },
+                                            text = {
+                                                Text(
+                                                    "PocketCurrency keeps working even without internet using saved rates."
+                                                )
+                                            }
+                                        )
+                                    }
                                 }
                             is ConversionState.Error -> {
                                 Card(
@@ -466,40 +521,53 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(44.dp),
+                            .heightIn(min = 44.dp),
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(horizontal = 12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                                .padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalArrangement = Arrangement.Center
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    "Realtime",
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Switch(
-                                    modifier = Modifier.scale(0.85f),
-                                    checked = realtimeEnabled,
-                                    onCheckedChange = { viewModel.setRealtimeEnabled(it) },
-                                    enabled = canUseRealtime
-                                )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "Realtime",
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Switch(
+                                        modifier = Modifier.scale(0.85f),
+                                        checked = realtimeEnabled,
+                                        onCheckedChange = { viewModel.setRealtimeEnabled(it) },
+                                        enabled = canUseRealtime
+                                    )
+                                }
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        "Scan",
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Switch(
+                                        modifier = Modifier.scale(0.85f),
+                                        checked = liveScanEnabled,
+                                        onCheckedChange = { viewModel.setLiveScanEnabled(it) }
+                                    )
+                                }
                             }
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (showRealtimeHelper) {
                                 Text(
-                                    "Scan",
-                                    style = MaterialTheme.typography.labelSmall
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Switch(
-                                    modifier = Modifier.scale(0.85f),
-                                    checked = liveScanEnabled,
-                                    onCheckedChange = { viewModel.setLiveScanEnabled(it) }
+                                    "Realtime updates require internet access and a supported rate service.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 6.dp)
                                 )
                             }
                         }
@@ -531,6 +599,8 @@ private fun CurrencyInputDropdown(
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .semantics { contentDescription = "$label currency selector" }
                 .onFocusChanged {
                     if (it.isFocused && options.isNotEmpty()) {
                         expanded = true
@@ -591,16 +661,18 @@ private fun formatAmountInput(amount: Double): String {
     return formatter.format(amount)
 }
 
-private fun formatServiceStatus(status: ServiceStatus): String {
-    val label = when (status.type) {
-        ServiceStatusType.LIVE -> "Using live price updates"
-        ServiceStatusType.SAVED -> "Using saved rates (offline)"
-        ServiceStatusType.MANUAL -> "Using manual rates"
+private fun serviceStatusLabel(type: ServiceStatusType): String {
+    return when (type) {
+        ServiceStatusType.LIVE -> "Live updates"
+        ServiceStatusType.SAVED -> "Saved for offline use"
+        ServiceStatusType.MANUAL -> "Works offline"
     }
-    val relative = DateUtils.getRelativeTimeSpanString(
-        status.lastUpdatedMillis,
+}
+
+private fun formatRelativeUpdated(lastUpdatedMillis: Long): CharSequence {
+    return DateUtils.getRelativeTimeSpanString(
+        lastUpdatedMillis,
         System.currentTimeMillis(),
         DateUtils.MINUTE_IN_MILLIS
     )
-    return "$label - Updated $relative"
 }

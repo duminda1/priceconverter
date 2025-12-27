@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -77,7 +78,28 @@ fun SettingsScreen(
         mutableStateOf(uiState.destinationCurrency)
     }
     val selectedProvider = uiState.providers.firstOrNull { it.id == uiState.service }
-    val selectedProviderLabel = selectedProvider?.displayName ?: uiState.service
+    val frankfurterLabel = "Daily updates (recommended)"
+    val advancedLabel = "Advanced: Custom API"
+    val advancedSubtitle = "For advanced users who need real-time updates"
+    val selectedProviderLabel = selectedProvider?.let { provider ->
+        when (provider.id) {
+            Constants.PROVIDER_FRANKFURTER -> frankfurterLabel
+            Constants.PROVIDER_EXCHANGE_RATES -> advancedLabel
+            else -> provider.displayName
+        }
+    } ?: uiState.service
+    val sortedSavedRates = remember(uiState.savedRates) {
+        uiState.savedRates.sortedWith(
+            compareByDescending<CurrencyPairRate> { it.lastUpdatedMillis }
+                .thenBy { "${it.from}-${it.to}" }
+        )
+    }
+    val sortedManualRates = remember(uiState.manualRates) {
+        uiState.manualRates.sortedWith(
+            compareByDescending<CurrencyPairRate> { it.lastUpdatedMillis }
+                .thenBy { "${it.from}-${it.to}" }
+        )
+    }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         viewModel.refreshState()
@@ -108,6 +130,7 @@ fun SettingsScreen(
                 navigationIcon = {
                     TextButton(
                         onClick = { navController.popBackStack() },
+                        modifier = Modifier.heightIn(min = 48.dp),
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = MaterialTheme.colorScheme.primary
                         )
@@ -129,7 +152,7 @@ fun SettingsScreen(
                 .padding(padding)
                 .padding(horizontal = 20.dp, vertical = 12.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             Card(
                 modifier = Modifier
@@ -241,50 +264,93 @@ fun SettingsScreen(
 
             var expanded by remember { mutableStateOf(false) }
 
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                OutlinedTextField(
-                    value = selectedProviderLabel,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Provider") },
-                    trailingIcon = {
-                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                    },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
-                )
-
-                ExposedDropdownMenu(
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                ExposedDropdownMenuBox(
                     expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    onExpandedChange = { expanded = !expanded }
                 ) {
-                    uiState.providers.forEach { provider ->
-                        DropdownMenuItem(
-                            text = { Text(provider.displayName) },
-                            onClick = {
-                                viewModel.setService(provider.id)
-                                expanded = false
-                            }
-                        )
+                    OutlinedTextField(
+                        value = selectedProviderLabel,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Provider") },
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        uiState.providers.forEach { provider ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(
+                                            when (provider.id) {
+                                                Constants.PROVIDER_FRANKFURTER -> frankfurterLabel
+                                                Constants.PROVIDER_EXCHANGE_RATES -> advancedLabel
+                                                else -> provider.displayName
+                                            }
+                                        )
+                                        if (provider.id == Constants.PROVIDER_EXCHANGE_RATES) {
+                                            Text(
+                                                advancedSubtitle,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    viewModel.setService(provider.id)
+                                    expanded = false
+                                }
+                            )
+                        }
                     }
                 }
+                // Friendly provider summary keeps choices simple for travellers.
+                val providerDescription = if (uiState.service == Constants.PROVIDER_EXCHANGE_RATES) {
+                    "For advanced users who need real-time updates"
+                } else {
+                    "Daily rates · No setup · Works offline"
+                }
+                Text(
+                    providerDescription,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            if (uiState.service != Constants.PROVIDER_FRANKFURTER) {
+            // Advanced options stay tucked away unless explicitly chosen.
+            if (uiState.service == Constants.PROVIDER_EXCHANGE_RATES) {
+                Text(
+                    "Advanced",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                    )
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("API access", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "API access",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         OutlinedTextField(
                             value = uiState.apiKeyInput,
                             onValueChange = viewModel::onApiKeyChanged,
@@ -304,7 +370,8 @@ fun SettingsScreen(
                             )
                             Button(
                                 onClick = viewModel::verifyAndSaveApiKey,
-                                enabled = !uiState.isVerifying
+                                enabled = !uiState.isVerifying,
+                                modifier = Modifier.heightIn(min = 48.dp)
                             ) {
                                 Text(if (uiState.isVerifying) "Verifying..." else "Verify & Save")
                             }
@@ -322,13 +389,19 @@ fun SettingsScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                    )
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text("Plan & usage", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Plan & usage",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -374,7 +447,10 @@ fun SettingsScreen(
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
-                                    TextButton(onClick = viewModel::clearUsageWarning) {
+                                    TextButton(
+                                        onClick = viewModel::clearUsageWarning,
+                                        modifier = Modifier.heightIn(min = 48.dp)
+                                    ) {
                                         Text("Dismiss")
                                     }
                                 }
@@ -397,7 +473,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Live scan camera", style = MaterialTheme.typography.titleMedium)
+                        Text("Scan prices with camera", style = MaterialTheme.typography.titleMedium)
                         Text(
                             "Disable scanning and use manual entry only.",
                             style = MaterialTheme.typography.bodyMedium,
@@ -411,7 +487,20 @@ fun SettingsScreen(
                 }
             }
 
-            Text("Saved service rates", style = MaterialTheme.typography.titleLarge)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Saved for offline use", style = MaterialTheme.typography.titleLarge)
+                TextButton(
+                    onClick = viewModel::refreshSavedRates,
+                    enabled = uiState.savedRates.isNotEmpty() && !uiState.isRefreshingSavedRates,
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Text(if (uiState.isRefreshingSavedRates) "Refreshing..." else "Refresh all")
+                }
+            }
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -450,7 +539,9 @@ fun SettingsScreen(
                             savedTo.value = ""
                             editingSaved.value = null
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
                     ) {
                         Text(if (editingSaved.value == null) "Fetch & Save" else "Update pair")
                     }
@@ -472,14 +563,14 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                 ) {
                     Text(
-                        "No saved pairs yet.",
+                        "No saved offline pairs yet.",
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
-                uiState.savedRates.forEach { rate ->
+                sortedSavedRates.forEach { rate ->
                     RateRow(
                         title = "${rate.from} → ${rate.to}",
                         subtitle = "Rate ${rate.rate} • ${formatTimestamp(rate.lastUpdatedMillis)}",
@@ -495,7 +586,15 @@ fun SettingsScreen(
                 }
             }
 
-            Text("Manual rates", style = MaterialTheme.typography.titleLarge)
+            val manualFromNeedsHelp = shouldShowCurrencyCodeHelp(manualFrom.value)
+            val manualToNeedsHelp = shouldShowCurrencyCodeHelp(manualTo.value)
+
+            Text("Offline rates", style = MaterialTheme.typography.titleLarge)
+            Text(
+                "Offline rates are ideal when travelling without internet access.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -506,7 +605,7 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        if (editingManual.value == null) "Add manual rate" else "Edit manual rate",
+                        if (editingManual.value == null) "Add offline rate" else "Edit offline rate",
                         style = MaterialTheme.typography.titleMedium
                     )
                     Row(
@@ -515,15 +614,25 @@ fun SettingsScreen(
                     ) {
                         OutlinedTextField(
                             value = manualFrom.value,
-                            onValueChange = { manualFrom.value = it },
+                            onValueChange = { manualFrom.value = it.uppercase() },
                             label = { Text("From") },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            supportingText = {
+                                if (manualFromNeedsHelp) {
+                                    Text("Use a 3-letter currency code (e.g. USD)")
+                                }
+                            }
                         )
                         OutlinedTextField(
                             value = manualTo.value,
-                            onValueChange = { manualTo.value = it },
+                            onValueChange = { manualTo.value = it.uppercase() },
                             label = { Text("To") },
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            supportingText = {
+                                if (manualToNeedsHelp) {
+                                    Text("Use a 3-letter currency code (e.g. USD)")
+                                }
+                            }
                         )
                     }
                     OutlinedTextField(
@@ -547,7 +656,9 @@ fun SettingsScreen(
                                 editingManual.value = null
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 48.dp)
                     ) {
                         Text(if (editingManual.value == null) "Save rate" else "Update rate")
                     }
@@ -561,14 +672,14 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                 ) {
                     Text(
-                        "No manual rates yet.",
+                        "No offline rates yet.",
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
-                uiState.manualRates.forEach { rate ->
+                sortedManualRates.forEach { rate ->
                     RateRow(
                         title = "${rate.from} → ${rate.to}",
                         subtitle = "Rate ${rate.rate} • ${formatTimestamp(rate.lastUpdatedMillis)}",
@@ -616,11 +727,28 @@ private fun RateRow(
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = onPrimary) { Text(primaryLabel) }
-                TextButton(onClick = onSecondary) { Text(secondaryLabel) }
+                TextButton(
+                    onClick = onPrimary,
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Text(primaryLabel)
+                }
+                TextButton(
+                    onClick = onSecondary,
+                    modifier = Modifier.heightIn(min = 48.dp)
+                ) {
+                    Text(secondaryLabel)
+                }
             }
         }
     }
+}
+
+private fun shouldShowCurrencyCodeHelp(value: String): Boolean {
+    val trimmed = value.trim()
+    if (trimmed.isBlank()) return false
+    if (trimmed.length != 3) return true
+    return trimmed.any { !it.isLetter() }
 }
 
 private fun formatTimestamp(timestampMillis: Long): String {

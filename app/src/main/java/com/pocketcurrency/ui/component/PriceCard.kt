@@ -15,10 +15,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import com.pocketcurrency.domain.model.ConversionResult
 import com.pocketcurrency.domain.model.RateSource
 import android.text.format.DateUtils
 import java.text.DecimalFormat
+import kotlin.math.abs
 
 @Composable
 fun PriceCard(result: ConversionResult) {
@@ -32,7 +34,7 @@ fun PriceCard(result: ConversionResult) {
     val sourceLabel = when (result.rate.source) {
         RateSource.LIVE -> "Live"
         RateSource.SAVED -> "Saved"
-        RateSource.MANUAL -> "Manual"
+        RateSource.MANUAL -> "Offline"
     }
     val timeLabel = "Updated"
 
@@ -40,6 +42,8 @@ fun PriceCard(result: ConversionResult) {
     val formattedFrom = decimalFormat.format(result.from.amount)
     val formattedTo = decimalFormat.format(result.convertedAmount)
     val formattedRate = decimalFormat.format(result.rate.rate)
+    val readableAmount = formatLargeAmount(result.convertedAmount)
+    val reassuranceColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f)
 
     Card(
         modifier = Modifier
@@ -49,8 +53,8 @@ fun PriceCard(result: ConversionResult) {
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
                 text = "Converted amount",
@@ -59,9 +63,16 @@ fun PriceCard(result: ConversionResult) {
             )
             Text(
                 text = "$formattedTo ${result.toCurrency}",
-                style = MaterialTheme.typography.displaySmall,
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onSurface
             )
+            if (readableAmount != null) {
+                Text(
+                    text = "≈ $readableAmount ${result.toCurrency} ($formattedTo)",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 InfoPill("From $formattedFrom ${result.from.currency}")
                 InfoPill("Rate $formattedRate")
@@ -70,10 +81,24 @@ fun PriceCard(result: ConversionResult) {
             Text(
                 text = "$sourceLabel · $timeLabel $relativeUpdated",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = reassuranceColor
             )
         }
     }
+}
+
+private fun formatLargeAmount(value: Double): String? {
+    val absValue = abs(value)
+    val (scaled, unit) = when {
+        absValue >= 1_000_000_000_000 -> absValue / 1_000_000_000_000 to "trillion"
+        absValue >= 1_000_000_000 -> absValue / 1_000_000_000 to "billion"
+        absValue >= 1_000_000 -> absValue / 1_000_000 to "million"
+        else -> return null
+    }
+
+    val formatted = DecimalFormat("#,##0.#").format(scaled)
+    val sign = if (value < 0) "-" else ""
+    return "$sign$formatted $unit"
 }
 
 @Composable
