@@ -2,6 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.appdistribution)
 }
 
 android {
@@ -18,6 +21,13 @@ android {
     }
 
     buildTypes {
+        debug {
+        firebaseAppDistribution {
+            testers = "duminda.ranasinghe@gmail.com"
+            releaseNotes = "PocketCurrency beta – offline rates & camera scan"
+         }
+       }   
+
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -56,6 +66,7 @@ dependencies {
 
     // --- Testing ---
     testImplementation(libs.junit)
+    testImplementation("io.mockk:mockk:1.13.12")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
