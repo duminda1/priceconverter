@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.data.repository.RateRepository
+import com.pocketcurrency.data.repository.RateUpdateRepository
 import com.pocketcurrency.data.repository.SettingsRepository
 import com.pocketcurrency.domain.model.ConversionResult
 import com.pocketcurrency.domain.model.Price
@@ -13,6 +14,7 @@ import com.pocketcurrency.domain.model.RateSource
 import com.pocketcurrency.domain.model.ServiceStatus
 import com.pocketcurrency.domain.model.ServiceStatusType
 import com.pocketcurrency.domain.usecase.ConvertCurrencyUseCase
+import com.pocketcurrency.utils.Constants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -27,7 +29,8 @@ sealed class ConversionState {
 class MainViewModel(
     application: Application,
     private val rateRepository: RateRepository,
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val rateUpdateRepository: RateUpdateRepository
 ) : AndroidViewModel(application) {
 
     private val convertCurrencyUseCase = ConvertCurrencyUseCase()
@@ -40,8 +43,16 @@ class MainViewModel(
     val realtimeEnabled: StateFlow<Boolean> = _realtimeEnabled
 
     private val _serviceReady =
-        MutableStateFlow(settingsRepository.hasApiKey())
+        MutableStateFlow(false)
     val serviceReady: StateFlow<Boolean> = _serviceReady
+
+    private val _provider =
+        MutableStateFlow(settingsRepository.getService())
+    val provider: StateFlow<String> = _provider
+
+    private val _realtimeAvailable =
+        MutableStateFlow(false)
+    val realtimeAvailable: StateFlow<Boolean> = _realtimeAvailable
 
     private val _liveScanEnabled =
         MutableStateFlow(settingsRepository.isLiveScanEnabled())
@@ -91,11 +102,18 @@ class MainViewModel(
     private val _usageWarning = MutableStateFlow<String?>(null)
     val usageWarning: StateFlow<String?> = _usageWarning
 
+    private var lastProvider: String? = null
+
     init {
         refreshSettings()
     }
 
     fun setRealtimeEnabled(enabled: Boolean) {
+        if (!_realtimeAvailable.value) {
+            settingsRepository.setRealtimeEnabled(false)
+            _realtimeEnabled.value = false
+            return
+        }
         if (!_serviceReady.value) {
             _realtimeEnabled.value = false
             return
@@ -110,12 +128,20 @@ class MainViewModel(
     }
 
     fun refreshSettings() {
-        val ready = settingsRepository.hasApiKey()
+        val providerConfig = rateUpdateRepository.getActiveProviderConfig()
+        _provider.value = providerConfig.id
+        _realtimeAvailable.value = providerConfig.supportsRealtime
+        val ready = if (providerConfig.requiresApiKey) {
+            settingsRepository.hasApiKey()
+        } else {
+            true
+        }
         _serviceReady.value = ready
-        if (!ready) {
+        if (!ready || !providerConfig.supportsRealtime) {
             settingsRepository.setRealtimeEnabled(false)
         }
-        _realtimeEnabled.value = settingsRepository.isRealtimeEnabled()
+        _realtimeEnabled.value =
+            settingsRepository.isRealtimeEnabled() && providerConfig.supportsRealtime && ready
         _liveScanEnabled.value = settingsRepository.isLiveScanEnabled()
         val homeCurrency = settingsRepository.getHomeCurrency()
         val destinationCurrency = settingsRepository.getDestinationCurrency()
@@ -127,10 +153,18 @@ class MainViewModel(
         _savedRates.value = savedRates
         _manualCurrencies.value = (manualRates + savedRates)
             .flatMap { listOf(it.from, it.to) }
-            .plus(listOf(homeCurrency, destinationCurrency))
             .filter { it.isNotBlank() }
             .distinct()
             .sorted()
+
+        if (providerConfig.id != lastProvider) {
+            lastProvider = providerConfig.id
+            if (providerConfig.id == Constants.PROVIDER_FRANKFURTER) {
+                viewModelScope.launch {
+                    rateUpdateRepository.refreshSavedRatesIfStale()
+                }
+            }
+        }
     }
 
     fun clearUsageWarning() {

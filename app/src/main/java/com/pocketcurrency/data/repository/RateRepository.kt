@@ -12,7 +12,7 @@ data class RateResult(
 
 class RateRepository(
     private val settingsRepository: SettingsRepository,
-    private val exchangeRateRepository: ExchangeRateRepository
+    private val rateUpdateRepository: RateUpdateRepository
 ) {
 
     fun getSavedRates(): List<CurrencyPairRate> = settingsRepository.getSavedRates()
@@ -28,36 +28,35 @@ class RateRepository(
         val normalizedTo = toCurrency.trim().uppercase()
         val savedRate = findSavedRate(normalizedFrom, normalizedTo)
         val manualRate = findManualRate(normalizedFrom, normalizedTo)
+        val providerConfig = rateUpdateRepository.getActiveProviderConfig()
         val hasApiKey = settingsRepository.hasApiKey()
-        val canUseRealtime = realtimeEnabled && hasApiKey
+        val canUseRealtime = realtimeEnabled &&
+            providerConfig.supportsRealtime &&
+            (!providerConfig.requiresApiKey || hasApiKey)
 
         if (!canUseRealtime) {
             val fallback = savedRate ?: manualRate
             if (fallback != null) {
                 return RateResult(rate = fallback, warningMessage = null, errorMessage = null)
             }
-            val message = if (hasApiKey) {
-                "No saved or manual rates for this pair."
-            } else {
-                "No saved or manual rates. Add a manual rate or API key."
+            val message = when {
+                providerConfig.requiresApiKey && hasApiKey ->
+                    "No saved or manual rates for this pair."
+                providerConfig.requiresApiKey ->
+                    "No saved or manual rates. Add a manual rate or API key."
+                else ->
+                    "No saved or manual rates. Refresh a saved pair or add a manual rate."
             }
             return RateResult(rate = null, warningMessage = null, errorMessage = message)
         }
 
-        val apiResult = exchangeRateRepository.getExchangeRate(
+        val apiResult = rateUpdateRepository.fetchRate(
             fromCurrency = normalizedFrom,
             toCurrency = normalizedTo,
-            amount = 1.0
+            amount = 1.0,
+            saveOnSuccess = true
         )
         if (apiResult.rate != null) {
-            settingsRepository.upsertSavedRate(
-                CurrencyPairRate(
-                    from = normalizedFrom,
-                    to = normalizedTo,
-                    rate = apiResult.rate.rate,
-                    lastUpdatedMillis = apiResult.rate.lastUpdatedMillis
-                )
-            )
             return RateResult(
                 rate = apiResult.rate,
                 warningMessage = apiResult.warningMessage,

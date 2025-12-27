@@ -1,17 +1,23 @@
 package com.pocketcurrency.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.pocketcurrency.data.model.CurrencyPairRate
-import com.pocketcurrency.data.repository.ExchangeRateRepository
+import com.pocketcurrency.data.network.NetworkMonitor
+import com.pocketcurrency.data.provider.RateProviders
+import com.pocketcurrency.data.repository.RateUpdatePolicyRegistry
+import com.pocketcurrency.data.repository.RateUpdateRepository
 import com.pocketcurrency.data.repository.SettingsRepository
+import com.pocketcurrency.domain.model.RateProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
     val service: String = "",
+    val providers: List<RateProvider> = emptyList(),
     val apiKeyInput: String = "",
     val apiKeyStatus: String? = null,
     val actionStatus: String? = null,
@@ -32,7 +38,12 @@ data class SettingsUiState(
 class SettingsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val settingsRepository = SettingsRepository(application)
-    private val exchangeRepository = ExchangeRateRepository(settingsRepository)
+    private val rateUpdateRepository = RateUpdateRepository(
+        settingsRepository = settingsRepository,
+        providerRegistry = RateProviders.registry,
+        networkMonitor = NetworkMonitor(application),
+        policyRegistry = RateUpdatePolicyRegistry()
+    )
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState
@@ -42,9 +53,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun refreshState() {
+
         val usage = settingsRepository.getUsageState()
+
         _uiState.value = _uiState.value.copy(
             service = settingsRepository.getService(),
+            providers = RateProvider.values().toList(),
             apiKeyInput = settingsRepository.getApiKey().orEmpty(),
             isApiKeyVerified = settingsRepository.hasApiKey(),
             isFreePlan = settingsRepository.isFreePlan(),
@@ -76,7 +90,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
         _uiState.value = _uiState.value.copy(isVerifying = true, apiKeyStatus = null)
         viewModelScope.launch {
-            val result = exchangeRepository.verifyApiKey(apiKey)
+            val result = rateUpdateRepository.verifyApiKey(apiKey)
             if (result.rate != null) {
                 settingsRepository.setApiKey(apiKey)
                 _uiState.value = _uiState.value.copy(
@@ -148,16 +162,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         }
 
         viewModelScope.launch {
-            val result = exchangeRepository.getExchangeRate(normalizedFrom, normalizedTo, 1.0)
+            val result = rateUpdateRepository.fetchRate(
+                fromCurrency = normalizedFrom,
+                toCurrency = normalizedTo,
+                amount = 1.0,
+                saveOnSuccess = true
+            )
             if (result.rate != null) {
-                settingsRepository.upsertSavedRate(
-                    CurrencyPairRate(
-                        from = normalizedFrom,
-                        to = normalizedTo,
-                        rate = result.rate.rate,
-                        lastUpdatedMillis = result.rate.lastUpdatedMillis
-                    )
-                )
                 if (original != null &&
                     (original.from != normalizedFrom || original.to != normalizedTo)
                 ) {
