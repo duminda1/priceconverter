@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -92,6 +93,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     val amountValue = amountInput.toDoubleOrNull()
     val convertEnabled =
         amountValue != null && normalizedFrom.isNotBlank() && normalizedTo.isNotBlank()
+    val showCameraHint = liveScanEnabled && scanAmount == null
 
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     var cameraExecutor: ExecutorService? = null
@@ -244,6 +246,12 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 }, ContextCompat.getMainExecutor(ctx))
                                 previewView
                             })
+
+                            if (showCameraHint) {
+                                CameraHintOverlay(
+                                    text = "Looking for prices..."
+                                )
+                            }
 
                             Surface(
                                 modifier = Modifier
@@ -443,7 +451,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                             }
                             is ConversionState.Success ->
                                 Column(
-                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
                                 ) {
                                     serviceStatus?.let { status ->
                                         val statusLabel = serviceStatusLabel(status.type)
@@ -480,7 +488,10 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                             }
                                         }
                                     }
-                                    PriceCard((conversionState as ConversionState.Success).result)
+                                    PriceCard(
+                                        (conversionState as ConversionState.Success).result,
+                                        modifier = Modifier.offset(y = (-2).dp)
+                                    )
                                     if (showRateInfo) {
                                         AlertDialog(
                                             onDismissRequest = { showRateInfo = false },
@@ -575,6 +586,26 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CameraHintOverlay(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 20.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.align(Alignment.Center)
+        )
     }
 }
 
