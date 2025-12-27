@@ -1,9 +1,9 @@
 package com.pocketcurrency.domain.usecase
 
-import com.pocketcurrency.data.repository.ExchangeRateRepository
-import com.pocketcurrency.data.repository.ApiRateResult
+import com.pocketcurrency.data.model.ApiRateResult
+import com.pocketcurrency.data.repository.RateUpdateRepository
 
-class GetRatesUseCase(private val repository: ExchangeRateRepository) {
+class GetRatesUseCase(private val repository: RateUpdateRepository) {
 
     /**
      * Fetches the live conversion rate from API.
@@ -12,6 +12,11 @@ class GetRatesUseCase(private val repository: ExchangeRateRepository) {
      * @param amount amount to convert (default 1.0)
      */
     suspend fun execute(fromCurrency: String, toCurrency: String, amount: Double = 1.0): ApiRateResult {
-        return repository.getExchangeRate(fromCurrency, toCurrency, amount)
+        return repository.fetchRate(
+            fromCurrency = fromCurrency,
+            toCurrency = toCurrency,
+            amount = amount,
+            saveOnSuccess = false
+        )
     }
 }

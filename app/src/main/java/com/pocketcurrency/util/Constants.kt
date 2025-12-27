@@ -4,7 +4,10 @@ object Constants {
     const val DEFAULT_BASE_CURRENCY = "USD"
     const val DEFAULT_TARGET_CURRENCY = "AUD"
     const val EXCHANGE_API_BASE_URL = "https://api.exchangeratesapi.io/v1/"
-    const val EXCHANGE_API_SERVICE = "exchangeratesapi.io"
+    const val FRANKFURTER_API_BASE_URL = "https://api.frankfurter.app/"
+    const val PROVIDER_EXCHANGE_RATES = "exchangeratesapi"
+    const val PROVIDER_FRANKFURTER = "frankfurter"
+    const val DEFAULT_RATE_PROVIDER = PROVIDER_FRANKFURTER
     const val FREE_PLAN_LIMIT = 100
     const val PREFS_NAME = "price_converter_prefs"
     const val PREFS_SECURE_NAME = "price_converter_secure_prefs"

@@ -25,8 +25,16 @@ class SettingsRepository(context: Context) {
     private val prefs: SharedPreferences = createEncryptedPrefs(context)
 
     fun getService(): String {
-        return prefs.getString(Constants.PREFS_SERVICE, Constants.EXCHANGE_API_SERVICE)
-            ?: Constants.EXCHANGE_API_SERVICE
+        val stored = prefs.getString(Constants.PREFS_SERVICE, null)
+        val normalized = when (stored) {
+            Constants.PROVIDER_EXCHANGE_RATES,
+            Constants.PROVIDER_FRANKFURTER -> stored
+            else -> Constants.DEFAULT_RATE_PROVIDER
+        }
+        if (normalized != stored) {
+            prefs.edit().putString(Constants.PREFS_SERVICE, normalized).apply()
+        }
+        return normalized ?: Constants.DEFAULT_RATE_PROVIDER
     }
 
     fun setService(service: String) {

@@ -40,6 +40,7 @@ import com.pocketcurrency.viewmodel.ConversionState
 import com.pocketcurrency.viewmodel.MainViewModel
 import com.pocketcurrency.domain.model.ServiceStatus
 import com.pocketcurrency.domain.model.ServiceStatusType
+import com.pocketcurrency.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
@@ -54,6 +55,8 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     val conversionState by viewModel.conversionState.collectAsState()
     val realtimeEnabled by viewModel.realtimeEnabled.collectAsState()
     val serviceReady by viewModel.serviceReady.collectAsState()
+    val provider by viewModel.provider.collectAsState()
+    val realtimeAvailable by viewModel.realtimeAvailable.collectAsState()
     val liveScanEnabled by viewModel.liveScanEnabled.collectAsState()
     val manualCurrencies by viewModel.manualCurrencies.collectAsState()
     val manualRates by viewModel.manualRates.collectAsState()
@@ -80,7 +83,8 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
         (it.from == normalizedFrom && it.to == normalizedTo) ||
             (it.from == normalizedTo && it.to == normalizedFrom && it.rate != 0.0)
     }
-    val canConvert = manualRateAvailable || savedRateAvailable || serviceReady
+    val canUseRealtime = serviceReady && realtimeAvailable
+    val canConvert = manualRateAvailable || savedRateAvailable || canUseRealtime
     val amountValue = amountInput.toDoubleOrNull()
     val convertEnabled =
         amountValue != null && normalizedFrom.isNotBlank() && normalizedTo.isNotBlank()
@@ -376,8 +380,13 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 Text("Convert")
                             }
                             if (!canConvert) {
+                                val noRatesMessage = if (provider == Constants.PROVIDER_FRANKFURTER) {
+                                    "No rates available. Refresh a saved pair or add a manual rate."
+                                } else {
+                                    "No rates available. Add a manual rate or API key."
+                                }
                                 Text(
-                                    "No rates available. Add a manual rate or API key.",
+                                    noRatesMessage,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -478,7 +487,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                     modifier = Modifier.scale(0.85f),
                                     checked = realtimeEnabled,
                                     onCheckedChange = { viewModel.setRealtimeEnabled(it) },
-                                    enabled = serviceReady
+                                    enabled = canUseRealtime
                                 )
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -511,7 +520,7 @@ private fun CurrencyInputDropdown(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val filtered = options.filter { it.contains(value, ignoreCase = true) }
+    val filtered = options
 
     Box(modifier = modifier) {
         OutlinedTextField(

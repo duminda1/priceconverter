@@ -17,7 +17,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -30,6 +29,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +49,11 @@ import com.pocketcurrency.utils.Constants
 import com.pocketcurrency.viewmodel.SettingsViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,6 +76,8 @@ fun SettingsScreen(
     val destinationInput = remember(uiState.destinationCurrency, uiState.destinationAuto) {
         mutableStateOf(uiState.destinationCurrency)
     }
+    val selectedProvider = uiState.providers.firstOrNull { it.id == uiState.service }
+    val selectedProviderLabel = selectedProvider?.displayName ?: uiState.service
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         viewModel.refreshState()
@@ -232,132 +239,144 @@ fun SettingsScreen(
 
             Text("Rate service", style = MaterialTheme.typography.titleLarge)
 
-            Box(modifier = Modifier.fillMaxWidth()) {
+            var expanded by remember { mutableStateOf(false) }
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = !expanded }
+            ) {
                 OutlinedTextField(
-                    value = uiState.service,
+                    value = selectedProviderLabel,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Provider") },
-                    trailingIcon = { Text("v") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                    },
                     modifier = Modifier
+                        .menuAnchor()
                         .fillMaxWidth()
-                        .clickable { serviceExpanded.value = true }
                 )
-                DropdownMenu(
-                    expanded = serviceExpanded.value,
-                    onDismissRequest = { serviceExpanded.value = false }
+
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
                 ) {
-                    DropdownMenuItem(
-                        text = { Text(Constants.EXCHANGE_API_SERVICE) },
-                        onClick = {
-                            viewModel.setService(Constants.EXCHANGE_API_SERVICE)
-                            serviceExpanded.value = false
-                        }
-                    )
+                    uiState.providers.forEach { provider ->
+                        DropdownMenuItem(
+                            text = { Text(provider.displayName) },
+                            onClick = {
+                                viewModel.setService(provider.id)
+                                expanded = false
+                            }
+                        )
+                    }
                 }
             }
 
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+            if (uiState.service != Constants.PROVIDER_FRANKFURTER) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
-                    Text("API access", style = MaterialTheme.typography.titleMedium)
-                    OutlinedTextField(
-                        value = uiState.apiKeyInput,
-                        onValueChange = viewModel::onApiKeyChanged,
-                        label = { Text("API key") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            if (uiState.isApiKeyVerified) "Key verified" else "Key not verified",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Text("API access", style = MaterialTheme.typography.titleMedium)
+                        OutlinedTextField(
+                            value = uiState.apiKeyInput,
+                            onValueChange = viewModel::onApiKeyChanged,
+                            label = { Text("API key") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            modifier = Modifier.fillMaxWidth()
                         )
-                        Button(
-                            onClick = viewModel::verifyAndSaveApiKey,
-                            enabled = !uiState.isVerifying
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(if (uiState.isVerifying) "Verifying..." else "Verify & Save")
-                        }
-                    }
-                    uiState.apiKeyStatus?.let { message ->
-                        Text(
-                            message,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text("Plan & usage", style = MaterialTheme.typography.titleMedium)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text("Free plan (100 requests/month)")
                             Text(
-                                if (uiState.isFreePlan) "Alerts enabled" else "Alerts disabled",
+                                if (uiState.isApiKeyVerified) "Key verified" else "Key not verified",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Button(
+                                onClick = viewModel::verifyAndSaveApiKey,
+                                enabled = !uiState.isVerifying
+                            ) {
+                                Text(if (uiState.isVerifying) "Verifying..." else "Verify & Save")
+                            }
+                        }
+                        uiState.apiKeyStatus?.let { message ->
+                            Text(
+                                message,
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        Switch(
-                            checked = uiState.isFreePlan,
-                            onCheckedChange = viewModel::setFreePlan
-                        )
                     }
-                    val usageProgress =
-                        (uiState.usageCount.coerceAtMost(Constants.FREE_PLAN_LIMIT)).toFloat() /
-                            Constants.FREE_PLAN_LIMIT
-                    LinearProgressIndicator(
-                        progress = usageProgress,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text(
-                        "Usage ${uiState.usageCount}/${Constants.FREE_PLAN_LIMIT} • ${uiState.usageMonth}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    uiState.usageWarning?.let { warning ->
-                        Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("Plan & usage", style = MaterialTheme.typography.titleMedium)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Text("Usage alert", style = MaterialTheme.typography.titleMedium)
+                            Column {
+                                Text("Free plan (100 requests/month)")
                                 Text(
-                                    warning,
+                                    if (uiState.isFreePlan) "Alerts enabled" else "Alerts disabled",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                TextButton(onClick = viewModel::clearUsageWarning) {
-                                    Text("Dismiss")
+                            }
+                            Switch(
+                                checked = uiState.isFreePlan,
+                                onCheckedChange = viewModel::setFreePlan
+                            )
+                        }
+                        val usageProgress =
+                            (uiState.usageCount.coerceAtMost(Constants.FREE_PLAN_LIMIT)).toFloat() /
+                                Constants.FREE_PLAN_LIMIT
+                        LinearProgressIndicator(
+                            progress = usageProgress,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Text(
+                            "Usage ${uiState.usageCount}/${Constants.FREE_PLAN_LIMIT} • ${uiState.usageMonth}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        uiState.usageWarning?.let { warning ->
+                            Surface(
+                                shape = RoundedCornerShape(16.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(12.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text("Usage alert", style = MaterialTheme.typography.titleMedium)
+                                    Text(
+                                        warning,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    TextButton(onClick = viewModel::clearUsageWarning) {
+                                        Text("Dismiss")
+                                    }
                                 }
                             }
                         }
