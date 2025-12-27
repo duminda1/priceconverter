@@ -3,4 +3,8 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.compose) apply false
+
+    // Firebase plugins (available to modules)
+    alias(libs.plugins.google.services) apply false
+    alias(libs.plugins.firebase.appdistribution) apply false
 }
