@@ -23,7 +23,7 @@ import java.text.DecimalFormat
 import kotlin.math.abs
 
 @Composable
-fun PriceCard(result: ConversionResult) {
+fun PriceCard(result: ConversionResult, modifier: Modifier = Modifier) {
 
     val relativeUpdated = DateUtils.getRelativeTimeSpanString(
         result.rate.lastUpdatedMillis,
@@ -38,15 +38,14 @@ fun PriceCard(result: ConversionResult) {
     }
     val timeLabel = "Updated"
 
-    val decimalFormat = DecimalFormat("#,##0.00")
-    val formattedFrom = decimalFormat.format(result.from.amount)
-    val formattedTo = decimalFormat.format(result.convertedAmount)
-    val formattedRate = decimalFormat.format(result.rate.rate)
+    val formattedFrom = formatDisplayAmount(result.from.amount)
+    val formattedTo = formatDisplayAmount(result.convertedAmount)
+    val formattedRate = formatDisplayAmount(result.rate.rate)
     val readableAmount = formatLargeAmount(result.convertedAmount)
     val reassuranceColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f)
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -85,6 +84,15 @@ fun PriceCard(result: ConversionResult) {
             )
         }
     }
+}
+
+internal fun formatDisplayAmount(value: Double): String {
+    val absValue = abs(value)
+    val formatter = DecimalFormat("#,##0.00")
+    if (absValue < 1) {
+        formatter.maximumFractionDigits = 6
+    }
+    return formatter.format(value)
 }
 
 private fun formatLargeAmount(value: Double): String? {
