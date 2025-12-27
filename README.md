@@ -34,6 +34,7 @@ Designed for non-technical users, PocketCurrency works anywhere in the world, su
 ```bash
 git clone https://github.com/duminda1/priceconverter.git
 cd priceconverter
+```
 
 ## Open in Android Studio
 
