@@ -23,7 +23,7 @@ import java.text.DecimalFormat
 import kotlin.math.abs
 
 @Composable
-fun PriceCard(result: ConversionResult, modifier: Modifier = Modifier) {
+fun PriceCard(modifier: Modifier = Modifier, result: ConversionResult) {
 
     val relativeUpdated = DateUtils.getRelativeTimeSpanString(
         result.rate.lastUpdatedMillis,

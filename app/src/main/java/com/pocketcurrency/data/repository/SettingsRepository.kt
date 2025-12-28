@@ -270,7 +270,7 @@ class SettingsRepository(context: Context) {
         val calendar = Calendar.getInstance()
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH) + 1
-        return String.format("%04d-%02d", year, month)
+        return String.format(Locale.ROOT, "%04d-%02d", year, month)
     }
 
     private fun createEncryptedPrefs(context: Context): SharedPreferences {

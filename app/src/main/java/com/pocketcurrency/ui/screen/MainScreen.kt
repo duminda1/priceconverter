@@ -349,6 +349,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 CurrencyInputDropdown(
+                                    modifier = Modifier.weight(1f),
                                     label = "From",
                                     value = fromCurrency,
                                     placeholder = "USD",
@@ -357,8 +358,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                         fromCurrency = it
                                         hasCustomFrom = true
                                     },
-                                    minHeight = currencyFieldMinHeight,
-                                    modifier = Modifier.weight(1f)
+                                    minHeight = currencyFieldMinHeight
                                 )
 
                                 IconButton(
@@ -378,6 +378,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 }
 
                                 CurrencyInputDropdown(
+                                    modifier = Modifier.weight(1f),
                                     label = "To",
                                     value = toCurrency,
                                     placeholder = "AUD",
@@ -386,8 +387,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                         toCurrency = it
                                         hasCustomTo = true
                                     },
-                                    minHeight = currencyFieldMinHeight,
-                                    modifier = Modifier.weight(1f)
+                                    minHeight = currencyFieldMinHeight
                                 )
                             }
 
@@ -498,8 +498,8 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                         }
                                     }
                                     PriceCard(
-                                        (conversionState as ConversionState.Success).result,
-                                        modifier = Modifier.offset(y = (-1).dp)
+                                        modifier = Modifier.offset(y = (-1).dp),
+                                        result = (conversionState as ConversionState.Success).result
                                     )
                                     if (showRateInfo) {
                                         AlertDialog(
@@ -600,8 +600,8 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
 
 @Composable
 private fun CameraHintOverlay(
-    text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    text: String
 ) {
     Box(
         modifier = modifier
@@ -620,13 +620,13 @@ private fun CameraHintOverlay(
 
 @Composable
 private fun CurrencyInputDropdown(
+    modifier: Modifier = Modifier,
     label: String,
     value: String,
     placeholder: String,
     options: List<String>,
     onValueChange: (String) -> Unit,
-    minHeight: Dp = 48.dp,
-    modifier: Modifier = Modifier
+    minHeight: Dp = 48.dp
 ) {
     var expanded by remember { mutableStateOf(false) }
     val filtered = options

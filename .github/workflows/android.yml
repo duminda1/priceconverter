@@ -27,6 +27,9 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
+      - name: Run Android Lint
+        run: ./gradlew lint
+
       - name: Build debug APK
         run: ./gradlew assembleDebug
 
@@ -59,9 +62,3 @@ jobs:
             fail_ci_if_error: true
         env:
             CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Run Android Lint
-        run: ./gradlew lint
-
-    
-

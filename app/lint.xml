@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <issue id="UnusedResources" severity="warning" />
+    <issue id="HardcodedText" severity="warning" />
+    <issue id="GradleDependency" severity="ignore"/>
+    <issue id="NewerVersionAvailable" severity="ignore"/>
+    <issue id="UseTomlInstead" severity="ignore"/>
+</lint>
