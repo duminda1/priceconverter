@@ -51,6 +51,12 @@ android {
     buildFeatures {
         compose = true
     }
+
+    lint {
+        abortOnError true
+        warningsAsErrors true
+        checkReleaseBuilds true
+    }
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {
