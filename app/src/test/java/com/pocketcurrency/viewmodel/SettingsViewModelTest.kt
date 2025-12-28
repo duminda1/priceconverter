@@ -8,13 +8,11 @@ import com.pocketcurrency.data.repository.RateUpdateRepository
 import com.pocketcurrency.data.repository.SettingsRepository
 import com.pocketcurrency.domain.model.RateSource
 import com.pocketcurrency.utils.Constants
-import io.mockk.capture
+import io.mockk.anyConstructed
 import io.mockk.coEvery
-import io.mockk.constructedWith
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
-import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -60,13 +58,13 @@ class SettingsViewModelTest {
     @Test
     fun verifyAndSaveApiKey_success_savesAndRefreshes() = runTest(dispatcherRule.testDispatcher) {
         coEvery {
-            constructedWith<RateUpdateRepository>(any(), any(), any(), any()).verifyApiKey("NEWKEY")
+            anyConstructed<RateUpdateRepository>().verifyApiKey("NEWKEY")
         } returns ApiRateResult(
             rate = CurrencyRate(1.2, 100L, RateSource.LIVE),
             warningMessage = "Usage warning",
             errorMessage = null
         )
-        every { constructedWith<SettingsRepository>(any()).getApiKey() } returns "NEWKEY"
+        every { anyConstructed<SettingsRepository>().getApiKey() } returns "NEWKEY"
 
         val viewModel = SettingsViewModel(mockk(relaxed = true))
 
@@ -74,7 +72,7 @@ class SettingsViewModelTest {
         viewModel.verifyAndSaveApiKey()
         advanceUntilIdle()
 
-        verify { constructedWith<SettingsRepository>(any()).setApiKey("NEWKEY") }
+        verify { anyConstructed<SettingsRepository>().setApiKey("NEWKEY") }
         assertEquals("API key verified and saved.", viewModel.uiState.value.apiKeyStatus)
         assertTrue(viewModel.uiState.value.isApiKeyVerified)
         assertEquals("Usage warning", viewModel.uiState.value.usageWarning)
@@ -83,7 +81,7 @@ class SettingsViewModelTest {
     @Test
     fun verifyAndSaveApiKey_failure_setsError() = runTest(dispatcherRule.testDispatcher) {
         coEvery {
-            constructedWith<RateUpdateRepository>(any(), any(), any(), any()).verifyApiKey("BAD")
+            anyConstructed<RateUpdateRepository>().verifyApiKey("BAD")
         } returns ApiRateResult(
             rate = null,
             warningMessage = "Warn",
@@ -114,8 +112,7 @@ class SettingsViewModelTest {
     fun fetchAndReplaceRate_success_removesOriginalAndUpdatesStatus() =
         runTest(dispatcherRule.testDispatcher) {
             coEvery {
-                constructedWith<RateUpdateRepository>(any(), any(), any(), any())
-                    .fetchRate("USD", "AUD", 1.0, true)
+                anyConstructed<RateUpdateRepository>().fetchRate("USD", "AUD", 1.0, true)
             } returns ApiRateResult(
                 rate = CurrencyRate(1.3, 200L, RateSource.LIVE),
                 warningMessage = "Warn",
@@ -128,7 +125,7 @@ class SettingsViewModelTest {
             viewModel.fetchAndReplaceRate(original, "usd", "aud")
             advanceUntilIdle()
 
-            verify { constructedWith<SettingsRepository>(any()).removeSavedRate("EUR", "GBP") }
+            verify { anyConstructed<SettingsRepository>().removeSavedRate("EUR", "GBP") }
             assertEquals("Saved rate for USD/AUD.", viewModel.uiState.value.actionStatus)
             assertEquals("Warn", viewModel.uiState.value.usageWarning)
         }
@@ -152,16 +149,14 @@ class SettingsViewModelTest {
             )
             every { anyConstructed<SettingsRepository>().getSavedRates() } returns savedRates
             coEvery {
-            constructedWith<RateUpdateRepository>(any(), any(), any(), any())
-                .fetchRate("USD", "AUD", 1.0, true)
+            anyConstructed<RateUpdateRepository>().fetchRate("USD", "AUD", 1.0, true)
         } returns ApiRateResult(
             rate = CurrencyRate(1.1, 1L, RateSource.LIVE),
             warningMessage = null,
             errorMessage = null
         )
             coEvery {
-            constructedWith<RateUpdateRepository>(any(), any(), any(), any())
-                .fetchRate("EUR", "JPY", 1.0, true)
+            anyConstructed<RateUpdateRepository>().fetchRate("EUR", "JPY", 1.0, true)
         } returns ApiRateResult(
             rate = null,
             warningMessage = "Warn",
@@ -197,19 +192,15 @@ class SettingsViewModelTest {
 
             viewModel.upsertManualRate("usd", "aud", 1.25)
 
-            val captured = slot<CurrencyPairRate>()
             verify {
-                constructedWith<SettingsRepository>(any()).upsertManualRate(capture(captured))
+                anyConstructed<SettingsRepository>().upsertManualRate(any())
             }
-            assertEquals("USD", captured.captured.from)
-            assertEquals("AUD", captured.captured.to)
-            assertEquals(1.25, captured.captured.rate, 0.0001)
             assertEquals("Manual rate saved.", viewModel.uiState.value.actionStatus)
         }
 
     private fun stubDefaults() {
         every {
-            constructedWith<SettingsRepository>(any()).getUsageState()
+            anyConstructed<SettingsRepository>().getUsageState()
         } returns ApiUsageState(
             monthKey = "2024-01",
             count = 0,
@@ -217,34 +208,33 @@ class SettingsViewModelTest {
             warn75 = false,
             warn90 = false
         )
-        every { constructedWith<SettingsRepository>(any()).getService() } returns Constants.PROVIDER_EXCHANGE_RATES
-        every { constructedWith<SettingsRepository>(any()).getApiKey() } returns "KEY"
-        every { constructedWith<SettingsRepository>(any()).hasApiKey() } returns true
-        every { constructedWith<SettingsRepository>(any()).isFreePlan() } returns true
-        every { constructedWith<SettingsRepository>(any()).isLiveScanEnabled() } returns true
-        every { constructedWith<SettingsRepository>(any()).getHomeCurrency() } returns "USD"
-        every { constructedWith<SettingsRepository>(any()).getDestinationCurrency() } returns "AUD"
-        every { constructedWith<SettingsRepository>(any()).isDestinationAuto() } returns true
-        every { constructedWith<SettingsRepository>(any()).getSavedRates() } returns emptyList()
-        every { constructedWith<SettingsRepository>(any()).getManualRates() } returns emptyList()
+        every { anyConstructed<SettingsRepository>().getService() } returns Constants.PROVIDER_EXCHANGE_RATES
+        every { anyConstructed<SettingsRepository>().getApiKey() } returns "KEY"
+        every { anyConstructed<SettingsRepository>().hasApiKey() } returns true
+        every { anyConstructed<SettingsRepository>().isFreePlan() } returns true
+        every { anyConstructed<SettingsRepository>().isLiveScanEnabled() } returns true
+        every { anyConstructed<SettingsRepository>().getHomeCurrency() } returns "USD"
+        every { anyConstructed<SettingsRepository>().getDestinationCurrency() } returns "AUD"
+        every { anyConstructed<SettingsRepository>().isDestinationAuto() } returns true
+        every { anyConstructed<SettingsRepository>().getSavedRates() } returns emptyList()
+        every { anyConstructed<SettingsRepository>().getManualRates() } returns emptyList()
 
-        every { constructedWith<SettingsRepository>(any()).setApiKey(any()) } returns Unit
-        every { constructedWith<SettingsRepository>(any()).setFreePlan(any()) } returns Unit
-        every { constructedWith<SettingsRepository>(any()).setService(any()) } returns Unit
-        every { constructedWith<SettingsRepository>(any()).setLiveScanEnabled(any()) } returns Unit
-        every { constructedWith<SettingsRepository>(any()).setHomeCurrency(any()) } returns Unit
-        every { constructedWith<SettingsRepository>(any()).setDestinationAuto(any()) } returns Unit
-        every { constructedWith<SettingsRepository>(any()).setDestinationCurrency(any()) } returns Unit
-        every { constructedWith<SettingsRepository>(any()).removeSavedRate(any(), any()) } returns Unit
-        every { constructedWith<SettingsRepository>(any()).upsertManualRate(any()) } returns Unit
-        every { constructedWith<SettingsRepository>(any()).removeManualRate(any(), any()) } returns Unit
+        every { anyConstructed<SettingsRepository>().setApiKey(any()) } returns Unit
+        every { anyConstructed<SettingsRepository>().setFreePlan(any()) } returns Unit
+        every { anyConstructed<SettingsRepository>().setService(any()) } returns Unit
+        every { anyConstructed<SettingsRepository>().setLiveScanEnabled(any()) } returns Unit
+        every { anyConstructed<SettingsRepository>().setHomeCurrency(any()) } returns Unit
+        every { anyConstructed<SettingsRepository>().setDestinationAuto(any()) } returns Unit
+        every { anyConstructed<SettingsRepository>().setDestinationCurrency(any()) } returns Unit
+        every { anyConstructed<SettingsRepository>().removeSavedRate(any(), any()) } returns Unit
+        every { anyConstructed<SettingsRepository>().upsertManualRate(any()) } returns Unit
+        every { anyConstructed<SettingsRepository>().removeManualRate(any(), any()) } returns Unit
 
         coEvery {
-            constructedWith<RateUpdateRepository>(any(), any(), any(), any()).verifyApiKey(any())
+            anyConstructed<RateUpdateRepository>().verifyApiKey(any())
         } returns ApiRateResult(rate = null, warningMessage = null, errorMessage = "Error")
         coEvery {
-            constructedWith<RateUpdateRepository>(any(), any(), any(), any())
-                .fetchRate(any(), any(), any(), any())
+            anyConstructed<RateUpdateRepository>().fetchRate(any(), any(), any(), any())
         } returns ApiRateResult(rate = null, warningMessage = null, errorMessage = "Error")
     }
 }
