@@ -36,15 +36,16 @@ data class SettingsUiState(
     val isRefreshingSavedRates: Boolean = false
 )
 
-class SettingsViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val settingsRepository = SettingsRepository(application)
-    private val rateUpdateRepository = RateUpdateRepository(
+class SettingsViewModel(
+    application: Application,
+    private val settingsRepository: SettingsRepository = SettingsRepository(application),
+    private val rateUpdateRepository: RateUpdateRepository = RateUpdateRepository(
         settingsRepository = settingsRepository,
         providerRegistry = RateProviders.registry,
         networkMonitor = NetworkMonitor(application),
         policyRegistry = RateUpdatePolicyRegistry()
     )
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState
