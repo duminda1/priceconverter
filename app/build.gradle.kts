@@ -26,7 +26,6 @@ android {
         debug {
         enableUnitTestCoverage = true
         firebaseAppDistribution {
-            testers = "duminda.ranasinghe@gmail.com"
             releaseNotes = "PocketCurrency beta – offline rates & camera scan"
          }
        }   
