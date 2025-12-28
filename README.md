@@ -1,3 +1,7 @@
+![Android CI](https://github.com/duminda1/priceconverter/actions/workflows/android-ci.yml/badge.svg)
+[![Coverage](https://codecov.io/gh/duminda1/priceconverter/branch/main/graph/badge.svg)](https://codecov.io/gh/duminda1/priceconverter)
+
+
 # PocketCurrency  
 **Instant currency conversion for travellers**
 

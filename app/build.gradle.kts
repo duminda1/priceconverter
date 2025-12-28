@@ -5,6 +5,8 @@ plugins {
 
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.appdistribution)
+
+    jacoco
 }
 
 android {
@@ -22,6 +24,7 @@ android {
 
     buildTypes {
         debug {
+        enableUnitTestCoverage = true
         firebaseAppDistribution {
             testers = "duminda.ranasinghe@gmail.com"
             releaseNotes = "PocketCurrency beta – offline rates & camera scan"
@@ -51,6 +54,51 @@ android {
     }
 }
 
+jacoco {
+    toolVersion = "0.8.10"
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*"
+    )
+
+    val kotlinClasses = fileTree(
+        layout.buildDirectory.dir("tmp/kotlin-classes/debug")
+    ) {
+        exclude(fileFilter)
+    }
+
+    val javaClasses = fileTree(
+        layout.buildDirectory.dir("intermediates/javac/debug/classes")
+    ) {
+        exclude(fileFilter)
+    }
+
+    classDirectories.setFrom(files(kotlinClasses, javaClasses))
+    sourceDirectories.setFrom(files("src/main/java", "src/main/kotlin"))
+    executionData.setFrom(
+        fileTree(layout.buildDirectory) {
+            include(
+                "jacoco/testDebugUnitTest.exec",
+                "outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec"
+            )
+        }
+    )
+}
+
 dependencies {
     // --- Android + Compose ---
     implementation(libs.androidx.core.ktx)
@@ -67,6 +115,7 @@ dependencies {
     // --- Testing ---
     testImplementation(libs.junit)
     testImplementation("io.mockk:mockk:1.13.12")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -95,14 +144,10 @@ dependencies {
     // Compose Navigation
     implementation("androidx.navigation:navigation-compose:2.7.3")
 
-    // ML Kit
-    implementation("com.google.mlkit:text-recognition:16.0.0") // stable version
-
     // Add this for await() support on ML Kit tasks
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // --- Retrofit and Gson ---
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
     // Optional: for logging network requests
