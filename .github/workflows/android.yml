@@ -27,6 +27,11 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+
+      # Tests
+
       - name: Run unit tests + coverage
         run: ./gradlew testDebugUnitTest jacocoTestReport
 
@@ -36,6 +41,22 @@ jobs:
             name: jacoco-report
             path: app/build/reports/jacoco/jacocoTestReport
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug
+      - name: Generate coverage badge
+        run: |
+          COVERAGE=$(grep -o 'line-rate="[^"]*"' app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml \
+            | head -n 1 | sed 's/[^0-9.]//g')
+          PERCENT=$(echo "$COVERAGE * 100" | bc)
+          echo "COVERAGE=$PERCENT" >> $GITHUB_ENV
+
+      - name: Create coverage badge
+        run: |
+            echo "https://img.shields.io/badge/coverage-${COVERAGE}%25-brightgreen"
+    
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with: 
+            files: app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+            fail_ci_if_error: true
+
+    
 
