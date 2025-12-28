@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.appdistribution)
 
-    jacoco
+    id("jacoco")
 }
 
 android {
@@ -51,10 +51,6 @@ android {
     buildFeatures {
         compose = true
     }
-}
-
-jacoco {
-    toolVersion = "0.8.10"
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {
