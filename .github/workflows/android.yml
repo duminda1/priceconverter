@@ -60,5 +60,8 @@ jobs:
         env:
             CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: Run Android Lint
+        run: ./gradlew lint
+
     
 
