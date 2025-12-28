@@ -15,6 +15,7 @@ import com.pocketcurrency.ui.screen.HelpScreen
 import com.pocketcurrency.viewmodel.MainViewModel
 import com.pocketcurrency.viewmodel.MainViewModelFactory
 import com.pocketcurrency.viewmodel.SettingsViewModel
+import com.pocketcurrency.viewmodel.SettingsViewModelFactory
 
 sealed class Screen(val route: String) {
     object Main : Screen("main")
@@ -29,9 +30,10 @@ fun PocketCurrencyNavGraph(
     val context = LocalContext.current
     val application = context.applicationContext as android.app.Application
     val mainViewModelFactory = remember(application) { MainViewModelFactory(application) }
+    val settingsViewModelFactory = remember(application) { SettingsViewModelFactory(application) }
     val navController: NavHostController = rememberNavController()
     val mainViewModel: MainViewModel = viewModel(factory = mainViewModelFactory)
-    val settingsViewModel: SettingsViewModel = viewModel()
+    val settingsViewModel: SettingsViewModel = viewModel(factory = settingsViewModelFactory)
 
     NavHost(
         navController = navController,
