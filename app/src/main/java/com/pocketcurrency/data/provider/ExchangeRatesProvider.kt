@@ -64,7 +64,7 @@ class ExchangeRatesProvider(
                         warningMessage = null,
                         errorMessage = ExchangeRateErrorMapper.map(response.error)
                             ?: "Service unavailable. Please try again."
-                    )y
+                    )
                 }
             } catch (e: Exception) {
                 ApiRateResult(
