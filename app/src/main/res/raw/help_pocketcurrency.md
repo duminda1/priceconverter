@@ -77,7 +77,8 @@ PocketCurrency uses different types of rates depending on what’s available.
 ### Live rates
 - Updated automatically when internet is available
 - Default live service is Frankfurter (no API key) and updates once per day around 16:00 CET
-- Most accurate option
+- Advanced: Custom API (exchangerate.host) provides realtime updates with your own API key
+- Most accurate option when realtime updates are enabled
 
 ### Saved rates
 - Last known rate stored on your phone
@@ -131,11 +132,12 @@ This is **optional** — the app works without it.
 Some users prefer to use their own service for realtime updates.
 
 To do this:
-1. Open **Settings → Rate service** and select **ExchangeRatesAPI**
-2. Visit https://exchangeratesapi.io
+1. Open **Settings → Rate service** and select **Advanced: Custom API (exchangerate.host)**
+2. Visit https://exchangerate.host/signup/free
 3. Create a free account
 4. Copy your API key
 5. Paste it into **Settings → API access**
+6. Tap **Verify & Save** to confirm the key
 
 If anything goes wrong, PocketCurrency safely falls back to saved or manual rates.
 
@@ -149,9 +151,13 @@ Here are some common situations:
 - PocketCurrency switches to saved or manual rates automatically
 
 ### Invalid API key
-- Only applies if you switch to ExchangeRatesAPI
+- Only applies if you switch to Advanced: Custom API (exchangerate.host)
 - The app continues using saved rates
 - You'll see a helpful message explaining what happened
+
+### Monthly API limit reached
+- Applies to exchangerate.host API keys
+- You may need to upgrade your plan or wait for the next billing cycle
 
 ### Camera not working
 - Check camera permissions

@@ -76,7 +76,7 @@ To enable automatic price updates:
 1. Open **Settings**
 2. Go to **Rate service**
 3. Use the built-in Frankfurter service (recommended, no API key, daily updates around 16:00 CET), or
-4. Choose ExchangeRatesAPI and add your own API key (advanced, realtime support)
+4. Choose Advanced: Custom API (exchangerate.host) and add your own API key (realtime support)
 
 ---
 
@@ -128,15 +128,16 @@ PocketCurrency can automatically update exchange rates using an online price upd
 
 - The default service is Frankfurter (no API key required)
 - Frankfurter updates once per day around 16:00 CET
-- Advanced users can switch to ExchangeRatesAPI (requires an API key) for realtime updates and usage tracking
+- Advanced users can switch to exchangerate.host (requires an API key) for realtime updates and usage tracking
 
-To use your own service (ExchangeRatesAPI):
+To use your own service (exchangerate.host):
 
-1. Open **Settings → Rate service** and select **ExchangeRatesAPI**
-2. Visit https://exchangeratesapi.io
+1. Open **Settings → Rate service** and select **Advanced: Custom API (exchangerate.host)**
+2. Visit https://exchangerate.host/signup/free
 3. Create a free account
 4. Copy your API key
 5. Paste it into **Settings → API access**
+6. Tap **Verify & Save** to confirm the key
 
 If the service is unavailable or the key is invalid, PocketCurrency continues using saved or manual rates.
 
