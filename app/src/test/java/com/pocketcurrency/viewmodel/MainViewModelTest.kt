@@ -131,7 +131,7 @@ class MainViewModelTest {
 
         val state = viewModel.conversionState.value as ConversionState.Success
         assertEquals(20.0, state.result.convertedAmount, 0.0001)
-        assertEquals(2.0, viewModel.currentRate.value, 0.0001)
+        assertEquals(2.0, viewModel.currentRate.value ?: 0.0, 0.0001)
         assertEquals(RateSource.SAVED, viewModel.currentRateSource.value)
         assertEquals(ServiceStatusType.SAVED, viewModel.serviceStatus.value!!.type)
         assertEquals("Warn", viewModel.usageWarning.value)
