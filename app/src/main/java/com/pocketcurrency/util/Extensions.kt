@@ -11,8 +11,7 @@ fun showToast(context: android.content.Context, message: String) {
 
 // Compose-friendly toast
 @Composable
-fun showToast(message: String) {
+fun ShowToast(message: String) {
     val context = LocalContext.current
     Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
 }
-

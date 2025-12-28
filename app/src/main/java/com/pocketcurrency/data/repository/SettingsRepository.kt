@@ -2,6 +2,7 @@ package com.pocketcurrency.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.pocketcurrency.data.model.CurrencyPairRate
@@ -32,19 +33,25 @@ class SettingsRepository(context: Context) {
             else -> Constants.DEFAULT_RATE_PROVIDER
         }
         if (normalized != stored) {
-            prefs.edit().putString(Constants.PREFS_SERVICE, normalized).apply()
+            prefs.edit {
+                putString(Constants.PREFS_SERVICE, normalized)
+            }
         }
         return normalized ?: Constants.DEFAULT_RATE_PROVIDER
     }
 
     fun setService(service: String) {
-        prefs.edit().putString(Constants.PREFS_SERVICE, service).apply()
+        prefs.edit {
+            putString(Constants.PREFS_SERVICE, service)
+        }
     }
 
     fun getApiKey(): String? = prefs.getString(Constants.PREFS_API_KEY, null)
 
     fun setApiKey(apiKey: String) {
-        prefs.edit().putString(Constants.PREFS_API_KEY, apiKey).apply()
+        prefs.edit {
+            putString(Constants.PREFS_API_KEY, apiKey)
+        }
     }
 
     fun hasApiKey(): Boolean = !getApiKey().isNullOrBlank()
@@ -52,19 +59,25 @@ class SettingsRepository(context: Context) {
     fun isFreePlan(): Boolean = prefs.getBoolean(Constants.PREFS_FREE_PLAN, true)
 
     fun setFreePlan(isFree: Boolean) {
-        prefs.edit().putBoolean(Constants.PREFS_FREE_PLAN, isFree).apply()
+        prefs.edit {
+            putBoolean(Constants.PREFS_FREE_PLAN, isFree)
+        }
     }
 
     fun isRealtimeEnabled(): Boolean = prefs.getBoolean(Constants.PREFS_REALTIME_ENABLED, false)
 
     fun setRealtimeEnabled(enabled: Boolean) {
-        prefs.edit().putBoolean(Constants.PREFS_REALTIME_ENABLED, enabled).apply()
+        prefs.edit {
+            putBoolean(Constants.PREFS_REALTIME_ENABLED, enabled)
+        }
     }
 
     fun isLiveScanEnabled(): Boolean = prefs.getBoolean(Constants.PREFS_LIVE_SCAN_ENABLED, true)
 
     fun setLiveScanEnabled(enabled: Boolean) {
-        prefs.edit().putBoolean(Constants.PREFS_LIVE_SCAN_ENABLED, enabled).apply()
+        prefs.edit {
+            putBoolean(Constants.PREFS_LIVE_SCAN_ENABLED, enabled)
+        }
     }
 
     fun getHomeCurrency(): String {
@@ -73,14 +86,18 @@ class SettingsRepository(context: Context) {
             return stored
         }
         val initial = defaultCurrencyForLocale(Locale.getDefault(), Constants.DEFAULT_TARGET_CURRENCY)
-        prefs.edit().putString(Constants.PREFS_HOME_CURRENCY, initial).apply()
+        prefs.edit {
+            putString(Constants.PREFS_HOME_CURRENCY, initial)
+        }
         return initial
     }
 
     fun setHomeCurrency(currencyCode: String) {
         val normalized = currencyCode.trim().uppercase()
         if (normalized.isNotBlank()) {
-            prefs.edit().putString(Constants.PREFS_HOME_CURRENCY, normalized).apply()
+            prefs.edit {
+                putString(Constants.PREFS_HOME_CURRENCY, normalized)
+            }
         }
     }
 
@@ -88,7 +105,9 @@ class SettingsRepository(context: Context) {
         prefs.getBoolean(Constants.PREFS_DESTINATION_AUTO, true)
 
     fun setDestinationAuto(enabled: Boolean) {
-        prefs.edit().putBoolean(Constants.PREFS_DESTINATION_AUTO, enabled).apply()
+        prefs.edit {
+            putBoolean(Constants.PREFS_DESTINATION_AUTO, enabled)
+        }
     }
 
     fun getDestinationCurrency(): String {
@@ -105,7 +124,9 @@ class SettingsRepository(context: Context) {
     fun setDestinationCurrency(currencyCode: String) {
         val normalized = currencyCode.trim().uppercase()
         if (normalized.isNotBlank()) {
-            prefs.edit().putString(Constants.PREFS_DESTINATION_CURRENCY, normalized).apply()
+            prefs.edit {
+                putString(Constants.PREFS_DESTINATION_CURRENCY, normalized)
+            }
         }
     }
 
@@ -132,7 +153,9 @@ class SettingsRepository(context: Context) {
         }
 
         val newCount = prefs.getInt(Constants.PREFS_USAGE_COUNT, 0) + 1
-        prefs.edit().putInt(Constants.PREFS_USAGE_COUNT, newCount).apply()
+        prefs.edit {
+            putInt(Constants.PREFS_USAGE_COUNT, newCount)
+        }
 
         if (!isFreePlan()) {
             return null
@@ -140,15 +163,21 @@ class SettingsRepository(context: Context) {
 
         val warning = when {
             newCount >= 90 && !prefs.getBoolean(Constants.PREFS_USAGE_WARN_90, false) -> {
-                prefs.edit().putBoolean(Constants.PREFS_USAGE_WARN_90, true).apply()
+                prefs.edit {
+                    putBoolean(Constants.PREFS_USAGE_WARN_90, true)
+                }
                 "90% of your monthly API requests are used ($newCount/${Constants.FREE_PLAN_LIMIT})."
             }
             newCount >= 75 && !prefs.getBoolean(Constants.PREFS_USAGE_WARN_75, false) -> {
-                prefs.edit().putBoolean(Constants.PREFS_USAGE_WARN_75, true).apply()
+                prefs.edit {
+                    putBoolean(Constants.PREFS_USAGE_WARN_75, true)
+                }
                 "75% of your monthly API requests are used ($newCount/${Constants.FREE_PLAN_LIMIT})."
             }
             newCount >= 50 && !prefs.getBoolean(Constants.PREFS_USAGE_WARN_50, false) -> {
-                prefs.edit().putBoolean(Constants.PREFS_USAGE_WARN_50, true).apply()
+                prefs.edit {
+                    putBoolean(Constants.PREFS_USAGE_WARN_50, true)
+                }
                 "50% of your monthly API requests are used ($newCount/${Constants.FREE_PLAN_LIMIT})."
             }
             else -> null
@@ -163,7 +192,9 @@ class SettingsRepository(context: Context) {
 
     fun upsertSavedRate(rate: CurrencyPairRate) {
         val updated = upsertRate(getSavedRates(), rate)
-        prefs.edit().putString(Constants.PREFS_SAVED_RATES, encodeRates(updated)).apply()
+        prefs.edit {
+            putString(Constants.PREFS_SAVED_RATES, encodeRates(updated))
+        }
     }
 
     fun removeSavedRate(from: String, to: String) {
@@ -171,7 +202,9 @@ class SettingsRepository(context: Context) {
         val updated = getSavedRates().filterNot {
             it.from == normalized.first && it.to == normalized.second
         }
-        prefs.edit().putString(Constants.PREFS_SAVED_RATES, encodeRates(updated)).apply()
+        prefs.edit {
+            putString(Constants.PREFS_SAVED_RATES, encodeRates(updated))
+        }
     }
 
     fun findSavedRate(from: String, to: String): CurrencyPairRate? {
@@ -187,7 +220,9 @@ class SettingsRepository(context: Context) {
 
     fun upsertManualRate(rate: CurrencyPairRate) {
         val updated = upsertRate(getManualRates(), rate)
-        prefs.edit().putString(Constants.PREFS_MANUAL_RATES, encodeRates(updated)).apply()
+        prefs.edit {
+            putString(Constants.PREFS_MANUAL_RATES, encodeRates(updated))
+        }
     }
 
     fun removeManualRate(from: String, to: String) {
@@ -195,7 +230,9 @@ class SettingsRepository(context: Context) {
         val updated = getManualRates().filterNot {
             it.from == normalized.first && it.to == normalized.second
         }
-        prefs.edit().putString(Constants.PREFS_MANUAL_RATES, encodeRates(updated)).apply()
+        prefs.edit {
+            putString(Constants.PREFS_MANUAL_RATES, encodeRates(updated))
+        }
     }
 
     fun findManualRate(from: String, to: String): CurrencyPairRate? {
@@ -206,13 +243,13 @@ class SettingsRepository(context: Context) {
     }
 
     private fun resetUsage(currentMonth: String) {
-        prefs.edit()
-            .putString(Constants.PREFS_USAGE_MONTH, currentMonth)
-            .putInt(Constants.PREFS_USAGE_COUNT, 0)
-            .putBoolean(Constants.PREFS_USAGE_WARN_50, false)
-            .putBoolean(Constants.PREFS_USAGE_WARN_75, false)
-            .putBoolean(Constants.PREFS_USAGE_WARN_90, false)
-            .apply()
+        prefs.edit {
+            putString(Constants.PREFS_USAGE_MONTH, currentMonth)
+            putInt(Constants.PREFS_USAGE_COUNT, 0)
+            putBoolean(Constants.PREFS_USAGE_WARN_50, false)
+            putBoolean(Constants.PREFS_USAGE_WARN_75, false)
+            putBoolean(Constants.PREFS_USAGE_WARN_90, false)
+        }
     }
 
     private fun normalizePair(from: String, to: String): Pair<String, String> {
@@ -270,7 +307,7 @@ class SettingsRepository(context: Context) {
         val calendar = Calendar.getInstance()
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH) + 1
-        return String.format("%04d-%02d", year, month)
+        return String.format(Locale.ROOT, "%04d-%02d", year, month)
     }
 
     private fun createEncryptedPrefs(context: Context): SharedPreferences {
