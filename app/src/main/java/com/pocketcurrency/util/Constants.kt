@@ -3,7 +3,7 @@ package com.pocketcurrency.utils
 object Constants {
     const val DEFAULT_BASE_CURRENCY = "USD"
     const val DEFAULT_TARGET_CURRENCY = "AUD"
-    const val EXCHANGE_API_BASE_URL = "https://api.exchangeratesapi.io/v1/"
+    const val EXCHANGE_API_BASE_URL = "https://api.exchangerate.host/"
     const val FRANKFURTER_API_BASE_URL = "https://api.frankfurter.app/"
     const val PROVIDER_EXCHANGE_RATES = "exchangeratesapi"
     const val PROVIDER_FRANKFURTER = "frankfurter"

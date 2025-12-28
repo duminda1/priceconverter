@@ -1,8 +1,8 @@
 package com.pocketcurrency.data.repository
 
 import com.pocketcurrency.data.api.ExchangeRateApi
+import com.pocketcurrency.data.api.ExchangeRateErrorMapper
 import com.pocketcurrency.data.api.RetrofitInstance
-import com.pocketcurrency.data.model.ApiError
 import com.pocketcurrency.data.model.CurrencyRate
 import com.pocketcurrency.domain.model.RateSource
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +26,7 @@ class ExchangeRateRepository(private val settingsRepository: SettingsRepository)
     private val maxRetryAttempts = 2
 
     /**
-     * Fetch the live conversion rate from exchangeratesapi.io API.
+     * Fetch the live conversion rate from exchangerate.host API.
      * Returns CurrencyRate or null if request fails.
      */
     suspend fun getExchangeRate(
@@ -71,7 +71,8 @@ class ExchangeRateRepository(private val settingsRepository: SettingsRepository)
                     ApiRateResult(
                         rate = null,
                         warningMessage = warning,
-                        errorMessage = mapApiError(response.error) ?: "Service unavailable. Please try again."
+                        errorMessage = ExchangeRateErrorMapper.map(response.error)
+                            ?: "Service unavailable. Please try again."
                     )
                 }
             } catch (e: Exception) {
@@ -122,7 +123,8 @@ class ExchangeRateRepository(private val settingsRepository: SettingsRepository)
                     ApiRateResult(
                         rate = null,
                         warningMessage = warning,
-                        errorMessage = mapApiError(response.error) ?: "Unable to verify the API key."
+                        errorMessage = ExchangeRateErrorMapper.map(response.error)
+                            ?: "Unable to verify the API key."
                     )
                 }
             } catch (e: Exception) {
@@ -163,19 +165,6 @@ class ExchangeRateRepository(private val settingsRepository: SettingsRepository)
             is IOException -> true
             is HttpException -> e.code() >= 500
             else -> false
-        }
-    }
-
-    private fun mapApiError(error: ApiError?): String? {
-        val info = error?.info?.lowercase().orEmpty()
-        return when {
-            error?.code == 101 || (info.contains("invalid") && info.contains("access key")) ->
-                "Invalid API key. Please check it in Settings."
-            info.contains("missing") && info.contains("access key") ->
-                "API key missing. Add it in Settings to use Live rates."
-            info.contains("not found") ->
-                "Service unavailable. Please try again."
-            else -> null
         }
     }
 

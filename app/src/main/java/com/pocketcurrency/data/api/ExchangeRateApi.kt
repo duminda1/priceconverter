@@ -6,7 +6,7 @@ import retrofit2.http.Query
 
 interface ExchangeRateApi {
 
-    // Convert endpoint: https://api.exchangeratesapi.io/v1/convert?access_key=KEY&from=USD&to=AUD&amount=1
+    // Convert endpoint: https://api.exchangerate.host/convert?access_key=KEY&from=USD&to=AUD&amount=1
     @GET("convert")
     suspend fun convert(
         @Query("access_key") accessKey: String,

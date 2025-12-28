@@ -30,6 +30,63 @@ class ExchangeRatesProviderTest {
     }
 
     @Test
+    fun fetchRate_mapsApiErrorToMonthlyLimitMessage() = runBlocking {
+        val response = ConvertResponse(
+            success = false,
+            query = Query(from = "USD", to = "AUD", amount = 1.0),
+            info = Info(rate = null, timestamp = null),
+            result = null,
+            error = ApiError(code = 104, info = "Monthly limit reached.")
+        )
+        val api = FakeExchangeRateApi(response = response)
+        val provider = ExchangeRatesProvider(api)
+
+        val result = provider.fetchRate("USD", "AUD", 1.0, apiKey = "KEY")
+
+        assertEquals(
+            "Monthly API request limit reached. Upgrade your plan or wait for the next cycle.",
+            result.errorMessage
+        )
+    }
+
+    @Test
+    fun fetchRate_mapsApiErrorToInvalidCurrencyMessage() = runBlocking {
+        val response = ConvertResponse(
+            success = false,
+            query = Query(from = "USD", to = "AUD", amount = 1.0),
+            info = Info(rate = null, timestamp = null),
+            result = null,
+            error = ApiError(code = 202, info = "Invalid currency code.")
+        )
+        val api = FakeExchangeRateApi(response = response)
+        val provider = ExchangeRatesProvider(api)
+
+        val result = provider.fetchRate("USD", "AUD", 1.0, apiKey = "KEY")
+
+        assertEquals("Invalid currency code(s). Check your selection.", result.errorMessage)
+    }
+
+
+    @Test
+    fun fetchRate_usesTimestampSecondsToMillis() = runBlocking {
+        val timestampSeconds = 1_700_000_000L
+        val response = ConvertResponse(
+            success = true,
+            query = Query(from = "USD", to = "AUD", amount = 1.0),
+            info = Info(rate = 1.5, timestamp = timestampSeconds),
+            result = 1.5,
+            error = null
+        )
+        val api = FakeExchangeRateApi(response = response)
+        val provider = ExchangeRatesProvider(api)
+
+        val result = provider.fetchRate("USD", "AUD", 1.0, apiKey = "KEY")
+
+        val rate = result.rate ?: throw AssertionError("Expected rate")
+        assertEquals(timestampSeconds * 1000L, rate.lastUpdatedMillis)
+    }
+
+    @Test
     fun fetchRate_returnsExceptionMessageForInvalidJson() = runBlocking {
         val api = FakeExchangeRateApi(exception = JsonDataException("Malformed JSON"))
         val provider = ExchangeRatesProvider(api)

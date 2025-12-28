@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.focus.onFocusChanged
@@ -77,10 +78,12 @@ fun SettingsScreen(
     val destinationInput = remember(uiState.destinationCurrency, uiState.destinationAuto) {
         mutableStateOf(uiState.destinationCurrency)
     }
+    val uriHandler = LocalUriHandler.current
     val selectedProvider = uiState.providers.firstOrNull { it.id == uiState.service }
     val frankfurterLabel = "Daily updates (recommended)"
     val advancedLabel = "Advanced: Custom API"
-    val advancedSubtitle = "For advanced users who need real-time updates"
+    val advancedSubtitle = "For advanced users who need real-time updates (exchangerate.host)"
+    val apiSignupUrl = "https://exchangerate.host/signup/free"
     val selectedProviderLabel = selectedProvider?.let { provider ->
         when (provider.id) {
             Constants.PROVIDER_FRANKFURTER -> frankfurterLabel
@@ -351,6 +354,19 @@ fun SettingsScreen(
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        if (!uiState.hasSavedApiKey) {
+                            Text(
+                                "No API key saved. Create a free key here:",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            TextButton(
+                                onClick = { uriHandler.openUri(apiSignupUrl) },
+                                modifier = Modifier.heightIn(min = 40.dp)
+                            ) {
+                                Text(apiSignupUrl)
+                            }
+                        }
                         OutlinedTextField(
                             value = uiState.apiKeyInput,
                             onValueChange = viewModel::onApiKeyChanged,
@@ -517,13 +533,13 @@ fun SettingsScreen(
                     ) {
                         OutlinedTextField(
                             value = savedFrom.value,
-                            onValueChange = { savedFrom.value = it },
+                            onValueChange = { savedFrom.value = it.uppercase() },
                             label = { Text("From") },
                             modifier = Modifier.weight(1f)
                         )
                         OutlinedTextField(
                             value = savedTo.value,
-                            onValueChange = { savedTo.value = it },
+                            onValueChange = { savedTo.value = it.uppercase() },
                             label = { Text("To") },
                             modifier = Modifier.weight(1f)
                         )

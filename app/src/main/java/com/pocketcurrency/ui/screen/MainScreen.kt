@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -20,6 +21,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.semantics.contentDescription
@@ -71,11 +73,11 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     val scanCurrency by viewModel.scanCurrency.collectAsState()
     val scanCurrencyConfident by viewModel.scanCurrencyConfident.collectAsState()
 
-    var amountInput by remember { mutableStateOf("") }
-    var fromCurrency by remember { mutableStateOf(defaultFrom) }
-    var toCurrency by remember { mutableStateOf(defaultTo) }
-    var hasCustomFrom by remember { mutableStateOf(false) }
-    var hasCustomTo by remember { mutableStateOf(false) }
+    var amountInput by rememberSaveable { mutableStateOf("") }
+    var fromCurrency by rememberSaveable { mutableStateOf(defaultFrom) }
+    var toCurrency by rememberSaveable { mutableStateOf(defaultTo) }
+    var hasCustomFrom by rememberSaveable { mutableStateOf(false) }
+    var hasCustomTo by rememberSaveable { mutableStateOf(false) }
     var showRateInfo by remember { mutableStateOf(false) }
     val normalizedFrom = fromCurrency.trim().uppercase()
     val normalizedTo = toCurrency.trim().uppercase()
@@ -175,7 +177,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                 .padding(padding)
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            val cameraHeight = maxHeight * 0.25f
+            val cameraHeight = maxHeight * 0.22f
             val bottomHeight = maxHeight - cameraHeight
 
             Column(
@@ -323,6 +325,9 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                         ) {
                             Text("Manual entry", style = MaterialTheme.typography.titleMedium)
 
+                            val amountFieldMinHeight = 56.dp
+                            val currencyFieldMinHeight = amountFieldMinHeight * 0.9f
+
                             OutlinedTextField(
                                 value = amountInput,
                                 onValueChange = { value ->
@@ -332,13 +337,15 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 placeholder = { Text("e.g. 18.50") },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = amountFieldMinHeight),
                                 shape = RoundedCornerShape(14.dp)
                             )
 
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 CurrencyInputDropdown(
@@ -350,6 +357,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                         fromCurrency = it
                                         hasCustomFrom = true
                                     },
+                                    minHeight = currencyFieldMinHeight,
                                     modifier = Modifier.weight(1f)
                                 )
 
@@ -378,6 +386,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                         toCurrency = it
                                         hasCustomTo = true
                                     },
+                                    minHeight = currencyFieldMinHeight,
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -451,7 +460,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                             }
                             is ConversionState.Success ->
                                 Column(
-                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                    verticalArrangement = Arrangement.spacedBy(0.5.dp)
                                 ) {
                                     serviceStatus?.let { status ->
                                         val statusLabel = serviceStatusLabel(status.type)
@@ -464,7 +473,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                             }
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
                                         ) {
                                             Text(
                                                 text = statusLabel,
@@ -478,7 +487,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                             )
                                             IconButton(
                                                 onClick = { showRateInfo = true },
-                                                modifier = Modifier.size(48.dp)
+                                                modifier = Modifier.size(42.dp)
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Outlined.Info,
@@ -490,7 +499,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                     }
                                     PriceCard(
                                         (conversionState as ConversionState.Success).result,
-                                        modifier = Modifier.offset(y = (-2).dp)
+                                        modifier = Modifier.offset(y = (-1).dp)
                                     )
                                     if (showRateInfo) {
                                         AlertDialog(
@@ -616,6 +625,7 @@ private fun CurrencyInputDropdown(
     placeholder: String,
     options: List<String>,
     onValueChange: (String) -> Unit,
+    minHeight: Dp = 48.dp,
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -630,7 +640,7 @@ private fun CurrencyInputDropdown(
             singleLine = true,
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 48.dp)
+                .heightIn(min = minHeight)
                 .semantics { contentDescription = "$label currency selector" }
                 .onFocusChanged {
                     if (it.isFocused && options.isNotEmpty()) {

@@ -1,7 +1,7 @@
 package com.pocketcurrency.data.provider
 
 import com.pocketcurrency.data.api.ExchangeRateApi
-import com.pocketcurrency.data.model.ApiError
+import com.pocketcurrency.data.api.ExchangeRateErrorMapper
 import com.pocketcurrency.data.model.ApiRateResult
 import com.pocketcurrency.data.model.CurrencyRate
 import com.pocketcurrency.domain.model.RateProvider
@@ -62,7 +62,7 @@ class ExchangeRatesProvider(
                     ApiRateResult(
                         rate = null,
                         warningMessage = null,
-                        errorMessage = mapApiError(response.error)
+                        errorMessage = ExchangeRateErrorMapper.map(response.error)
                             ?: "Service unavailable. Please try again."
                     )
                 }
@@ -111,7 +111,7 @@ class ExchangeRatesProvider(
                     ApiRateResult(
                         rate = null,
                         warningMessage = null,
-                        errorMessage = mapApiError(response.error)
+                        errorMessage = ExchangeRateErrorMapper.map(response.error)
                             ?: "Unable to verify the API key."
                     )
                 }
@@ -152,19 +152,6 @@ class ExchangeRatesProvider(
             is IOException -> true
             is HttpException -> e.code() >= 500
             else -> false
-        }
-    }
-
-    private fun mapApiError(error: ApiError?): String? {
-        val info = error?.info?.lowercase().orEmpty()
-        return when {
-            error?.code == 101 || (info.contains("invalid") && info.contains("access key")) ->
-                "Invalid API key. Please check it in Settings."
-            info.contains("missing") && info.contains("access key") ->
-                "API key missing. Add it in Settings to use Live rates."
-            info.contains("not found") ->
-                "Service unavailable. Please try again."
-            else -> null
         }
     }
 
