@@ -1,4 +1,5 @@
-![Android CI](https://github.com/duminda1/priceconverter/actions/workflows/android.yml/badge.svg)
+[![Android CI](https://github.com/duminda1/priceconverter/actions/workflows/build.yml/badge.svg)](
+https://github.com/duminda1/priceconverter/actions/workflows/build.yml)
 [![Coverage](https://codecov.io/gh/duminda1/priceconverter/branch/main/graph/badge.svg)](https://codecov.io/gh/duminda1/priceconverter)
 
 # PocketCurrency  
