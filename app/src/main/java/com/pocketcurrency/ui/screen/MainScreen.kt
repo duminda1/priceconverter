@@ -1,6 +1,5 @@
 package com.pocketcurrency.ui.screen
 
-import android.graphics.Bitmap
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.foundation.background
@@ -37,6 +36,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavHostController
 import android.text.format.DateUtils
+import com.google.mlkit.vision.common.InputImage
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -50,7 +50,6 @@ import com.pocketcurrency.domain.model.ServiceStatusType
 import com.pocketcurrency.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,8 +99,13 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     val showCameraHint = liveScanEnabled && scanAmount == null
 
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
-    var cameraExecutor: ExecutorService? = null
     val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+
+    DisposableEffect(cameraExecutor) {
+        // Ensure the executor is released when the composable leaves composition.
+        onDispose { cameraExecutor.shutdown() }
+    }
 
     LaunchedEffect(scanAmount) {
         scanAmount?.let { amountInput = formatAmountInput(it) }
@@ -217,7 +221,6 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                         ) {
                             AndroidView(factory = { ctx ->
                                 val previewView = androidx.camera.view.PreviewView(ctx)
-                                cameraExecutor = Executors.newSingleThreadExecutor()
                                 cameraProviderFuture.addListener({
                                     val cameraProvider = cameraProviderFuture.get()
                                     val preview = Preview.Builder().build().also {
@@ -228,14 +231,22 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                                         .build()
 
-                                    val textRecognizer = TextRecognizerHelper(context)
+                                    val textRecognizer = TextRecognizerHelper()
                                     val priceExtractor = PriceExtractor()
 
-                                    imageAnalysis.setAnalyzer(cameraExecutor!!) { imageProxy ->
-                                        val bitmap = imageProxy.toBitmap()
+                                    imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                                        val mediaImage = imageProxy.image
+                                        if (mediaImage == null) {
+                                            imageProxy.close()
+                                            return@setAnalyzer
+                                        }
+                                        val inputImage = InputImage.fromMediaImage(
+                                            mediaImage,
+                                            imageProxy.imageInfo.rotationDegrees
+                                        )
                                         scope.launch(Dispatchers.Default) {
                                             try {
-                                                val text = textRecognizer.recognizeText(bitmap)
+                                                val text = textRecognizer.recognizeText(inputImage)
                                                 val detected = priceExtractor.extract(text)
                                                 if (detected != null) {
                                                     viewModel.onScanResult(
@@ -256,7 +267,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                     try {
                                         cameraProvider.unbindAll()
                                         cameraProvider.bindToLifecycle(
-                                            context as androidx.lifecycle.LifecycleOwner,
+                                            lifecycleOwner,
                                             cameraSelector,
                                             preview,
                                             imageAnalysis
@@ -751,15 +762,6 @@ private fun CurrencyInputDropdown(
             }
         }
     }
-}
-
-// --- Helper extension to convert ImageProxy to Bitmap ---
-fun ImageProxy.toBitmap(): Bitmap? {
-    val planeProxy = this.planes.firstOrNull() ?: return null
-    val buffer = planeProxy.buffer
-    val bytes = ByteArray(buffer.remaining())
-    buffer.get(bytes)
-    return android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
 }
 
 private fun filterAmountInput(input: String): String {

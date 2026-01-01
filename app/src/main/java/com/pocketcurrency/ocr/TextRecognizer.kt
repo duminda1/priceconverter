@@ -1,23 +1,19 @@
 package com.pocketcurrency.ocr
 
-import android.content.Context
-import android.graphics.Bitmap
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlinx.coroutines.tasks.await
 
-class TextRecognizerHelper(context: Context) {
+class TextRecognizerHelper {
 
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
     /**
-     * Recognize text from a Bitmap image
+     * Recognize text from an InputImage.
      */
-    suspend fun recognizeText(bitmap: Bitmap): String {
-        val image = InputImage.fromBitmap(bitmap, 0)
+    suspend fun recognizeText(image: InputImage): String {
         val result = recognizer.process(image).await()
         return result.text
     }
 }
-
