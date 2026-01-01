@@ -15,7 +15,7 @@ data class DetectedPrice(
 class PriceExtractor {
 
     private val numberPattern = Pattern.compile(
-        """(?:\d{1,3}(?:[., ]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?)"""
+        "\\d(?:[\\d., ]*\\d)?"
     )
     private val codePattern = Pattern.compile("""\b[A-Z]{3}\b""")
     private val symbolPattern = Pattern.compile("""[€$£¥₹₩₱₫฿₴₦₪₺]""")
@@ -28,7 +28,11 @@ class PriceExtractor {
      * Extracts the most likely price and optional currency information from OCR text.
      */
     fun extract(text: String): DetectedPrice? {
-        val normalized = text.uppercase(Locale.getDefault())
+        val normalized = text
+            .replace('\u00A0', ' ')
+            .replace('\u2009', ' ')
+            .replace('\u202F', ' ')
+            .uppercase(Locale.ROOT)
         val currencyTokens = findCurrencyTokens(normalized)
         val matcher = numberPattern.matcher(normalized)
         var best: DetectedPrice? = null
@@ -65,23 +69,71 @@ class PriceExtractor {
     }
 
     private fun normalizeNumberToken(token: String): String? {
-        val lastDot = token.lastIndexOf('.')
-        val lastComma = token.lastIndexOf(',')
-        val decimalIndex = maxOf(lastDot, lastComma)
+        val decimalIndex = findDecimalSeparatorIndex(token)
         val sb = StringBuilder(token.length)
 
         for (i in token.indices) {
             val ch = token[i]
             when {
                 ch.isDigit() -> sb.append(ch)
-                decimalIndex >= 0 && i == decimalIndex && (ch == '.' || ch == ',') -> sb.append('.')
-                ch == '.' || ch == ',' || ch == ' ' -> {
-                    // Skip grouping separators.
+                i == decimalIndex && (ch == '.' || ch == ',') -> {
+                    // Rightmost dot/comma is the decimal separator.
+                    sb.append('.')
+                }
+                isGroupingSeparator(ch) -> {
+                    // Skip grouping separators (comma/dot/space variants).
                 }
             }
         }
 
         return if (sb.isNotEmpty()) sb.toString() else null
+    }
+
+    private fun findDecimalSeparatorIndex(token: String): Int {
+        val lastDot = token.lastIndexOf('.')
+        val lastComma = token.lastIndexOf(',')
+        if (lastDot < 0 && lastComma < 0) return -1
+        if (lastDot >= 0 && lastComma >= 0) return maxOf(lastDot, lastComma)
+
+        val lastIndex = if (lastDot >= 0) lastDot else lastComma
+        val digitsAfter = token.length - lastIndex - 1
+        if (digitsAfter <= 0) return -1
+
+        val sepChar = if (lastDot >= 0) '.' else ','
+        if (digitsAfter == 3 && isGroupedThousandsOnly(token, sepChar)) {
+            // Only grouping separators found; treat as integer.
+            return -1
+        }
+        return lastIndex
+    }
+
+    private fun isGroupedThousandsOnly(token: String, separator: Char): Boolean {
+        var digitsSinceSeparator = 0
+        var sawSeparator = false
+        for (i in token.length - 1 downTo 0) {
+            val ch = token[i]
+            when {
+                ch.isDigit() -> digitsSinceSeparator++
+                ch == separator -> {
+                    sawSeparator = true
+                    if (digitsSinceSeparator != 3) return false
+                    digitsSinceSeparator = 0
+                }
+                isGroupingSpace(ch) -> {
+                    // Ignore spacing inside grouped numbers.
+                }
+                else -> return false
+            }
+        }
+        return sawSeparator && digitsSinceSeparator in 1..3
+    }
+
+    private fun isGroupingSeparator(ch: Char): Boolean {
+        return ch == '.' || ch == ',' || isGroupingSpace(ch)
+    }
+
+    private fun isGroupingSpace(ch: Char): Boolean {
+        return ch == ' ' || ch == '\u00A0' || ch == '\u2009' || ch == '\u202F'
     }
 
     private fun findCurrencyTokens(text: String): List<CurrencyToken> {
