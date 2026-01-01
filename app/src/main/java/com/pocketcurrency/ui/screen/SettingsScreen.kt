@@ -39,7 +39,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -55,6 +54,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MenuAnchorType
+import androidx.lifecycle.compose.LocalLifecycleOwner
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -281,7 +282,7 @@ fun SettingsScreen(
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                         },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth()
                             .heightIn(min = 48.dp)
                     )
@@ -440,7 +441,7 @@ fun SettingsScreen(
                             (uiState.usageCount.coerceAtMost(Constants.FREE_PLAN_LIMIT)).toFloat() /
                                 Constants.FREE_PLAN_LIMIT
                         LinearProgressIndicator(
-                            progress = usageProgress,
+                            progress = { usageProgress },
                             modifier = Modifier.fillMaxWidth()
                         )
                         Text(
