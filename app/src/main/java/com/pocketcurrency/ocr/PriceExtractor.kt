@@ -3,6 +3,7 @@ package com.pocketcurrency.ocr
 import java.util.Currency
 import java.util.Locale
 import java.util.regex.Pattern
+import java.math.BigDecimal
 import com.pocketcurrency.utils.CurrencySymbols
 
 data class DetectedPrice(
@@ -13,7 +14,9 @@ data class DetectedPrice(
 
 class PriceExtractor {
 
-    private val numberPattern = Pattern.compile("""\d+[.,]?\d*""")
+    private val numberPattern = Pattern.compile(
+        """(?:\d{1,3}(?:[., ]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?)"""
+    )
     private val codePattern = Pattern.compile("""\b[A-Z]{3}\b""")
     private val symbolPattern = Pattern.compile("""[€$£¥₹₩₱₫฿₴₦₪₺]""")
     private val currencyCodes = Currency.getAvailableCurrencies()
@@ -53,20 +56,32 @@ class PriceExtractor {
     }
 
     private fun parseAmount(token: String): Double? {
-        val hasDot = token.contains('.')
-        val hasComma = token.contains(',')
-        val normalized = when {
-            hasDot && hasComma -> {
-                if (token.lastIndexOf('.') > token.lastIndexOf(',')) {
-                    token.replace(",", "")
-                } else {
-                    token.replace(".", "").replace(",", ".")
+        val normalized = normalizeNumberToken(token) ?: return null
+        return try {
+            BigDecimal(normalized).toDouble()
+        } catch (e: NumberFormatException) {
+            null
+        }
+    }
+
+    private fun normalizeNumberToken(token: String): String? {
+        val lastDot = token.lastIndexOf('.')
+        val lastComma = token.lastIndexOf(',')
+        val decimalIndex = maxOf(lastDot, lastComma)
+        val sb = StringBuilder(token.length)
+
+        for (i in token.indices) {
+            val ch = token[i]
+            when {
+                ch.isDigit() -> sb.append(ch)
+                decimalIndex >= 0 && i == decimalIndex && (ch == '.' || ch == ',') -> sb.append('.')
+                ch == '.' || ch == ',' || ch == ' ' -> {
+                    // Skip grouping separators.
                 }
             }
-            hasComma -> token.replace(",", ".")
-            else -> token
         }
-        return normalized.toDoubleOrNull()
+
+        return if (sb.isNotEmpty()) sb.toString() else null
     }
 
     private fun findCurrencyTokens(text: String): List<CurrencyToken> {
