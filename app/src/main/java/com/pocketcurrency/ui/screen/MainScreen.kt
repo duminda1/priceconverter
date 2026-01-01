@@ -5,6 +5,7 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -177,17 +179,34 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                 .padding(padding)
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
-            val cameraHeight = maxHeight * 0.22f
-            val bottomHeight = maxHeight - cameraHeight
+            val scrollState = rememberScrollState()
+            // Use a wider aspect ratio in landscape to reduce vertical dominance.
+            val isLandscape = maxWidth > maxHeight
+            val isTablet = maxWidth >= 600.dp
+            val useSideBySide = isTablet || isLandscape
+            val cameraAspectRatio = if (isLandscape) 16f / 9f else 4f / 3f
+            // Split on tablets (and wide landscapes) to use horizontal space effectively.
+            val cameraWeight = when {
+                isTablet -> 1.1f
+                isLandscape -> 0.95f
+                else -> 1f
+            }
+            val contentWeight = when {
+                isTablet -> 0.9f
+                isLandscape -> 1.05f
+                else -> 1f
+            }
+            val enableScroll = !useSideBySide || maxHeight < 520.dp
+            val anchorControls = useSideBySide && !enableScroll
+            val contentScrollModifier = if (enableScroll) {
+                Modifier.verticalScroll(scrollState)
+            } else {
+                Modifier
+            }
 
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
+            val cameraCard: @Composable (Modifier) -> Unit = { modifier ->
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(cameraHeight),
+                    modifier = modifier,
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
@@ -305,293 +324,351 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                         }
                     }
                 }
+            }
 
+            val contentColumn: @Composable (Modifier, Boolean) -> Unit = { modifier, anchorControls ->
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(bottomHeight),
+                    modifier = modifier,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 180.dp),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(10.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                    val manualEntryCard: @Composable () -> Unit = {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 180.dp),
+                            shape = RoundedCornerShape(20.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         ) {
-                            Text("Manual entry", style = MaterialTheme.typography.titleMedium)
-
-                            val amountFieldMinHeight = 56.dp
-                            val currencyFieldMinHeight = amountFieldMinHeight * 0.9f
-
-                            OutlinedTextField(
-                                value = amountInput,
-                                onValueChange = { value ->
-                                    amountInput = filterAmountInput(value)
-                                },
-                                label = { Text("Amount") },
-                                placeholder = { Text("e.g. 18.50") },
-                                singleLine = true,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = amountFieldMinHeight),
-                                shape = RoundedCornerShape(14.dp)
-                            )
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(7.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier.padding(10.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                CurrencyInputDropdown(
-                                    modifier = Modifier.weight(1f),
-                                    label = "From",
-                                    value = fromCurrency,
-                                    placeholder = "USD",
-                                    options = manualCurrencies,
-                                    onValueChange = {
-                                        fromCurrency = it
-                                        hasCustomFrom = true
+                                Text("Manual entry", style = MaterialTheme.typography.titleMedium)
+
+                                val amountFieldMinHeight = 56.dp
+                                val currencyFieldMinHeight = amountFieldMinHeight * 0.9f
+
+                                OutlinedTextField(
+                                    value = amountInput,
+                                    onValueChange = { value ->
+                                        amountInput = filterAmountInput(value)
                                     },
-                                    minHeight = currencyFieldMinHeight
+                                    label = { Text("Amount") },
+                                    placeholder = { Text("e.g. 18.50") },
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = amountFieldMinHeight),
+                                    shape = RoundedCornerShape(14.dp)
                                 )
 
-                                IconButton(
-                                    onClick = {
-                                        val temp = fromCurrency
-                                        fromCurrency = toCurrency
-                                        toCurrency = temp
-                                        hasCustomFrom = true
-                                        hasCustomTo = true
-                                    },
-                                    modifier = Modifier.size(48.dp)
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.SwapHoriz,
-                                        contentDescription = "Swap currencies"
+                                    CurrencyInputDropdown(
+                                        modifier = Modifier.weight(1f),
+                                        label = "From",
+                                        value = fromCurrency,
+                                        placeholder = "USD",
+                                        options = manualCurrencies,
+                                        onValueChange = {
+                                            fromCurrency = it
+                                            hasCustomFrom = true
+                                        },
+                                        minHeight = currencyFieldMinHeight
+                                    )
+
+                                    IconButton(
+                                        onClick = {
+                                            val temp = fromCurrency
+                                            fromCurrency = toCurrency
+                                            toCurrency = temp
+                                            hasCustomFrom = true
+                                            hasCustomTo = true
+                                        },
+                                        modifier = Modifier.size(48.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.SwapHoriz,
+                                            contentDescription = "Swap currencies"
+                                        )
+                                    }
+
+                                    CurrencyInputDropdown(
+                                        modifier = Modifier.weight(1f),
+                                        label = "To",
+                                        value = toCurrency,
+                                        placeholder = "AUD",
+                                        options = manualCurrencies,
+                                        onValueChange = {
+                                            toCurrency = it
+                                            hasCustomTo = true
+                                        },
+                                        minHeight = currencyFieldMinHeight
                                     )
                                 }
 
-                                CurrencyInputDropdown(
-                                    modifier = Modifier.weight(1f),
-                                    label = "To",
-                                    value = toCurrency,
-                                    placeholder = "AUD",
-                                    options = manualCurrencies,
-                                    onValueChange = {
-                                        toCurrency = it
-                                        hasCustomTo = true
+                                Button(
+                                    onClick = {
+                                        amountValue?.let { viewModel.convertPrice(it, fromCurrency, toCurrency) }
                                     },
-                                    minHeight = currencyFieldMinHeight
-                                )
-                            }
-
-                            Button(
-                                onClick = {
-                                    amountValue?.let { viewModel.convertPrice(it, fromCurrency, toCurrency) }
-                                },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 48.dp)
-                                    .semantics { contentDescription = "Convert" },
-                                shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                ),
-                                enabled = convertEnabled
-                            ) {
-                                Text("Convert")
-                            }
-                            if (!canConvert) {
-                                val noRatesMessage = if (provider == Constants.PROVIDER_FRANKFURTER) {
-                                    "No rates available. Refresh a saved pair or add an offline rate."
-                                } else {
-                                    "No rates available. Add an offline rate or API key."
-                                }
-                                Text(
-                                    noRatesMessage,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 110.dp)
-                    ) {
-                        when (conversionState) {
-                            is ConversionState.Idle -> {
-                                Surface(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(18.dp),
-                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 48.dp)
+                                        .semantics { contentDescription = "Convert" },
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    ),
+                                    enabled = convertEnabled
                                 ) {
+                                    Text("Convert")
+                                }
+                                if (!canConvert) {
+                                    val noRatesMessage = if (provider == Constants.PROVIDER_FRANKFURTER) {
+                                        "No rates available. Refresh a saved pair or add an offline rate."
+                                    } else {
+                                        "No rates available. Add an offline rate or API key."
+                                    }
                                     Text(
-                                        "Waiting for a price to convert.",
+                                        noRatesMessage,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.padding(12.dp),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
-                            is ConversionState.Loading -> {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(18.dp),
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                                ) {
-                                    Column(
-                                        modifier = Modifier.padding(12.dp),
-                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        }
+                    }
+
+                    val conversionCard: @Composable () -> Unit = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 110.dp)
+                        ) {
+                            when (conversionState) {
+                                is ConversionState.Idle -> {
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(18.dp),
+                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                                     ) {
-                                        Text("Converting...", style = MaterialTheme.typography.titleMedium)
-                                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                                    }
-                                }
-                            }
-                            is ConversionState.Success ->
-                                Column(
-                                    verticalArrangement = Arrangement.spacedBy(0.5.dp)
-                                ) {
-                                    serviceStatus?.let { status ->
-                                        val statusLabel = serviceStatusLabel(status.type)
-                                        val relativeUpdated = formatRelativeUpdated(status.lastUpdatedMillis)
-                                        val labelColor =
-                                            if (status.type == ServiceStatusType.LIVE) {
-                                                MaterialTheme.colorScheme.onSurfaceVariant
-                                            } else {
-                                                reassuranceColor
-                                            }
-                                        Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                        ) {
-                                            Text(
-                                                text = statusLabel,
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = labelColor
-                                            )
-                                            Text(
-                                                text = "· Updated $relativeUpdated",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = reassuranceColor
-                                            )
-                                            IconButton(
-                                                onClick = { showRateInfo = true },
-                                                modifier = Modifier.size(42.dp)
-                                            ) {
-                                                Icon(
-                                                    imageVector = Icons.Outlined.Info,
-                                                    contentDescription = "Rate source information",
-                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                )
-                                            }
-                                        }
-                                    }
-                                    PriceCard(
-                                        modifier = Modifier.offset(y = (-1).dp),
-                                        result = (conversionState as ConversionState.Success).result
-                                    )
-                                    if (showRateInfo) {
-                                        AlertDialog(
-                                            onDismissRequest = { showRateInfo = false },
-                                            confirmButton = {
-                                                TextButton(onClick = { showRateInfo = false }) {
-                                                    Text("Got it")
-                                                }
-                                            },
-                                            text = {
-                                                Text(
-                                                    "PocketCurrency keeps working even without internet using saved rates."
-                                                )
-                                            }
+                                        Text(
+                                            "Waiting for a price to convert.",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            modifier = Modifier.padding(12.dp),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 }
-                            is ConversionState.Error -> {
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(18.dp),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                    )
-                                ) {
-                                    Text(
-                                        (conversionState as ConversionState.Error).message,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.padding(12.dp),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                is ConversionState.Loading -> {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(18.dp),
+                                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                                    ) {
+                                        Column(
+                                            modifier = Modifier.padding(12.dp),
+                                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Text("Converting...", style = MaterialTheme.typography.titleMedium)
+                                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                        }
+                                    }
+                                }
+                                is ConversionState.Success ->
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(0.5.dp)
+                                    ) {
+                                        serviceStatus?.let { status ->
+                                            val statusLabel = serviceStatusLabel(status.type)
+                                            val relativeUpdated = formatRelativeUpdated(status.lastUpdatedMillis)
+                                            val labelColor =
+                                                if (status.type == ServiceStatusType.LIVE) {
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                                } else {
+                                                    reassuranceColor
+                                                }
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                            ) {
+                                                Text(
+                                                    text = statusLabel,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = labelColor
+                                                )
+                                                Text(
+                                                    text = "· Updated $relativeUpdated",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = reassuranceColor
+                                                )
+                                                IconButton(
+                                                    onClick = { showRateInfo = true },
+                                                    modifier = Modifier.size(42.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Outlined.Info,
+                                                        contentDescription = "Rate source information",
+                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+                                            }
+                                        }
+                                        PriceCard(
+                                            modifier = Modifier.offset(y = (-1).dp),
+                                            result = (conversionState as ConversionState.Success).result
+                                        )
+                                        if (showRateInfo) {
+                                            AlertDialog(
+                                                onDismissRequest = { showRateInfo = false },
+                                                confirmButton = {
+                                                    TextButton(onClick = { showRateInfo = false }) {
+                                                        Text("Got it")
+                                                    }
+                                                },
+                                                text = {
+                                                    Text(
+                                                        "PocketCurrency keeps working even without internet using saved rates."
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    }
+                                is ConversionState.Error -> {
+                                    Card(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(18.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                        )
+                                    ) {
+                                        Text(
+                                            (conversionState as ConversionState.Error).message,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            modifier = Modifier.padding(12.dp),
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 44.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column(
+                    val controlsCard: @Composable () -> Unit = {
+                        Card(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 12.dp, vertical = 6.dp),
-                            verticalArrangement = Arrangement.Center
+                                .fillMaxWidth()
+                                .heightIn(min = 44.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalArrangement = Arrangement.Center
                             ) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            "Realtime",
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Switch(
+                                            modifier = Modifier.scale(0.85f),
+                                            checked = realtimeEnabled,
+                                            onCheckedChange = { viewModel.setRealtimeEnabled(it) },
+                                            enabled = canUseRealtime
+                                        )
+                                    }
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            "Scan",
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Switch(
+                                            modifier = Modifier.scale(0.85f),
+                                            checked = liveScanEnabled,
+                                            onCheckedChange = { viewModel.setLiveScanEnabled(it) }
+                                        )
+                                    }
+                                }
+                                if (showRealtimeHelper) {
                                     Text(
-                                        "Realtime",
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Switch(
-                                        modifier = Modifier.scale(0.85f),
-                                        checked = realtimeEnabled,
-                                        onCheckedChange = { viewModel.setRealtimeEnabled(it) },
-                                        enabled = canUseRealtime
+                                        "Realtime updates require internet access and a supported rate service.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(top = 6.dp)
                                     )
                                 }
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        "Scan",
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                    Spacer(modifier = Modifier.width(6.dp))
-                                    Switch(
-                                        modifier = Modifier.scale(0.85f),
-                                        checked = liveScanEnabled,
-                                        onCheckedChange = { viewModel.setLiveScanEnabled(it) }
-                                    )
-                                }
-                            }
-                            if (showRealtimeHelper) {
-                                Text(
-                                    "Realtime updates require internet access and a supported rate service.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(top = 6.dp)
-                                )
                             }
                         }
                     }
+
+                    if (anchorControls) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            manualEntryCard()
+                            conversionCard()
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        controlsCard()
+                    } else {
+                        manualEntryCard()
+                        conversionCard()
+                        controlsCard()
+                    }
+                }
+            }
+
+            if (useSideBySide) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    cameraCard(
+                        Modifier
+                            .weight(cameraWeight)
+                            .aspectRatio(cameraAspectRatio)
+                    )
+                    contentColumn(
+                        Modifier
+                            .weight(contentWeight)
+                            .then(if (anchorControls) Modifier.fillMaxHeight() else Modifier)
+                            .then(contentScrollModifier),
+                        anchorControls
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    cameraCard(
+                        Modifier
+                            .fillMaxWidth()
+                            // Responsive camera sizing without fixed heights.
+                            .aspectRatio(cameraAspectRatio)
+                    )
+                    contentColumn(
+                        Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            // Scrollable details area for small screens.
+                            .then(contentScrollModifier),
+                        false
+                    )
                 }
             }
         }
