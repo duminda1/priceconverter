@@ -132,34 +132,42 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                 val textRecognizer = TextRecognizerHelper()
                 val priceExtractor = PriceExtractor()
 
-                analysis.setAnalyzer(executor) { imageProxy ->
-                    val mediaImage = imageProxy.image
-                    if (mediaImage == null) {
-                        imageProxy.close()
-                        return@setAnalyzer
-                    }
-                    val inputImage = InputImage.fromMediaImage(
-                        mediaImage,
-                        imageProxy.imageInfo.rotationDegrees
-                    )
-                    scope.launch(Dispatchers.Default) {
-                        try {
-                            val text = textRecognizer.recognizeText(inputImage)
-                            val detected = priceExtractor.extract(text)
-                            if (detected != null) {
-                                viewModel.onScanResult(
-                                    amount = detected.amount,
-                                    currencyCode = detected.currencyCode,
-                                    isConfident = detected.isConfident
-                                )
+                analysis.setAnalyzer(
+                    executor,
+                    object : ImageAnalysis.Analyzer {
+                        @androidx.annotation.OptIn(
+                            androidx.camera.core.ExperimentalGetImage::class
+                        )
+                        override fun analyze(imageProxy: ImageProxy) {
+                            val mediaImage = imageProxy.image
+                            if (mediaImage == null) {
+                                imageProxy.close()
+                                return
                             }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        } finally {
-                            imageProxy.close()
+                            val inputImage = InputImage.fromMediaImage(
+                                mediaImage,
+                                imageProxy.imageInfo.rotationDegrees
+                            )
+                            scope.launch(Dispatchers.Default) {
+                                try {
+                                    val text = textRecognizer.recognizeText(inputImage)
+                                    val detected = priceExtractor.extract(text)
+                                    if (detected != null) {
+                                        viewModel.onScanResult(
+                                            amount = detected.amount,
+                                            currencyCode = detected.currencyCode,
+                                            isConfident = detected.isConfident
+                                        )
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                } finally {
+                                    imageProxy.close()
+                                }
+                            }
                         }
                     }
-                }
+                )
 
                 val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
                 try {
