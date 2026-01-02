@@ -4,6 +4,7 @@ import android.app.Application
 import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.pocketcurrency.R
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.data.repository.RateRepository
 import com.pocketcurrency.data.repository.RateUpdateRepository
@@ -30,10 +31,16 @@ class MainViewModel(
     application: Application,
     private val rateRepository: RateRepository,
     private val settingsRepository: SettingsRepository,
-    private val rateUpdateRepository: RateUpdateRepository
+    private val rateUpdateRepository: RateUpdateRepository,
+    private val strings: StringProvider = ResourceStringProvider(application)
 ) : AndroidViewModel(application) {
 
     private val convertCurrencyUseCase = ConvertCurrencyUseCase()
+
+    private companion object {
+        private const val SCAN_DEBOUNCE_DELAY_MS = 900L
+        private const val SCAN_MIN_INTERVAL_MS = 350L
+    }
 
     private val _conversionState = MutableStateFlow<ConversionState>(ConversionState.Idle)
     val conversionState: StateFlow<ConversionState> = _conversionState
@@ -175,7 +182,8 @@ class MainViewModel(
         val normalizedFrom = fromCurrency.trim().uppercase()
         val normalizedTo = toCurrency.trim().uppercase()
         if (normalizedFrom.isBlank() || normalizedTo.isBlank()) {
-            _conversionState.value = ConversionState.Error("Enter valid currency codes.")
+            _conversionState.value =
+                ConversionState.Error(strings.get(R.string.error_invalid_currency_codes))
             return
         }
 
@@ -216,12 +224,15 @@ class MainViewModel(
                     _conversionState.value = ConversionState.Success(result)
                 } else {
                     _conversionState.value = ConversionState.Error(
-                        rateResult.errorMessage ?: "Service unavailable. Please try again."
+                        rateResult.errorMessage
+                            ?: strings.get(R.string.error_service_unavailable)
                     )
                 }
             } catch (e: Exception) {
                 _conversionState.value =
-                    ConversionState.Error(e.message ?: "Service unavailable. Please try again.")
+                    ConversionState.Error(
+                        e.message ?: strings.get(R.string.error_service_unavailable)
+                    )
             }
         }
     }
@@ -231,10 +242,10 @@ class MainViewModel(
         val amountChanged =
             lastScanAmount == null || kotlin.math.abs(lastScanAmount!! - amount) > 0.01
         val currencyChanged = lastScanCurrency != currencyCode || lastScanConfident != isConfident
-        if (!amountChanged && !currencyChanged && now - lastScanAt < 900) {
+        if (!amountChanged && !currencyChanged && now - lastScanAt < SCAN_DEBOUNCE_DELAY_MS) {
             return
         }
-        if (now - lastScanAt < 350) {
+        if (now - lastScanAt < SCAN_MIN_INTERVAL_MS) {
             return
         }
 
@@ -247,4 +258,5 @@ class MainViewModel(
         _scanCurrency.value = currencyCode
         _scanCurrencyConfident.value = isConfident
     }
+
 }

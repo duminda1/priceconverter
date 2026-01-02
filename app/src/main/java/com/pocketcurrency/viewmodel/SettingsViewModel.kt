@@ -4,6 +4,7 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.pocketcurrency.R
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.data.network.NetworkMonitor
 import com.pocketcurrency.data.provider.RateProviders
@@ -45,7 +46,8 @@ class SettingsViewModel(
         providerRegistry = RateProviders.registry,
         networkMonitor = NetworkMonitor(application),
         policyRegistry = RateUpdatePolicyRegistry()
-    )
+    ),
+    private val strings: StringProvider = ResourceStringProvider(application)
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
@@ -88,7 +90,9 @@ class SettingsViewModel(
     fun verifyAndSaveApiKey() {
         val apiKey = _uiState.value.apiKeyInput.trim()
         if (apiKey.isBlank()) {
-            _uiState.value = _uiState.value.copy(apiKeyStatus = "Enter a valid API key.")
+            _uiState.value = _uiState.value.copy(
+                apiKeyStatus = strings.get(R.string.error_invalid_api_key)
+            )
             return
         }
 
@@ -98,7 +102,7 @@ class SettingsViewModel(
             if (result.rate != null) {
                 settingsRepository.setApiKey(apiKey)
                 _uiState.value = _uiState.value.copy(
-                    apiKeyStatus = "API key verified and saved.",
+                    apiKeyStatus = strings.get(R.string.status_api_key_saved),
                     isApiKeyVerified = true,
                     isVerifying = false,
                     usageWarning = result.warningMessage
@@ -106,7 +110,8 @@ class SettingsViewModel(
                 refreshState()
             } else {
                 _uiState.value = _uiState.value.copy(
-                    apiKeyStatus = result.errorMessage ?: "Unable to verify API key.",
+                    apiKeyStatus = result.errorMessage
+                        ?: strings.get(R.string.error_api_key_verify_failed),
                     isApiKeyVerified = false,
                     isVerifying = false,
                     usageWarning = result.warningMessage
@@ -161,7 +166,9 @@ class SettingsViewModel(
         val normalizedFrom = from.trim().uppercase()
         val normalizedTo = to.trim().uppercase()
         if (normalizedFrom.isBlank() || normalizedTo.isBlank()) {
-            _uiState.value = _uiState.value.copy(actionStatus = "Enter valid currency codes.")
+            _uiState.value = _uiState.value.copy(
+                actionStatus = strings.get(R.string.error_invalid_currency_codes)
+            )
             return
         }
 
@@ -179,13 +186,18 @@ class SettingsViewModel(
                     settingsRepository.removeSavedRate(original.from, original.to)
                 }
                 _uiState.value = _uiState.value.copy(
-                    actionStatus = "Saved rate for $normalizedFrom/$normalizedTo.",
+                    actionStatus = strings.get(
+                        R.string.status_saved_rate_pair,
+                        normalizedFrom,
+                        normalizedTo
+                    ),
                     usageWarning = result.warningMessage
                 )
                 refreshState()
             } else {
                 _uiState.value = _uiState.value.copy(
-                    actionStatus = result.errorMessage ?: "Failed to fetch rate.",
+                    actionStatus = result.errorMessage
+                        ?: strings.get(R.string.error_fetch_rate_failed),
                     usageWarning = result.warningMessage
                 )
             }
@@ -200,7 +212,9 @@ class SettingsViewModel(
     fun refreshSavedRates() {
         val savedRates = settingsRepository.getSavedRates()
         if (savedRates.isEmpty()) {
-            _uiState.value = _uiState.value.copy(actionStatus = "No saved rates to refresh.")
+            _uiState.value = _uiState.value.copy(
+                actionStatus = strings.get(R.string.status_no_saved_rates_to_refresh)
+            )
             return
         }
         if (_uiState.value.isRefreshingSavedRates) {
@@ -209,7 +223,7 @@ class SettingsViewModel(
 
         _uiState.value = _uiState.value.copy(
             isRefreshingSavedRates = true,
-            actionStatus = "Refreshing saved rates..."
+            actionStatus = strings.get(R.string.status_refreshing_saved_rates)
         )
 
         viewModelScope.launch {
@@ -235,9 +249,18 @@ class SettingsViewModel(
             }
 
             val status = if (firstError == null) {
-                "Refreshed $refreshedCount/${savedRates.size} saved rates."
+                strings.get(
+                    R.string.status_refreshed_saved_rates,
+                    refreshedCount,
+                    savedRates.size
+                )
             } else {
-                "Refreshed $refreshedCount/${savedRates.size} saved rates. ${firstError}"
+                strings.get(
+                    R.string.status_refreshed_saved_rates_with_error,
+                    refreshedCount,
+                    savedRates.size,
+                    firstError
+                )
             }
 
             _uiState.value = _uiState.value.copy(
@@ -253,7 +276,9 @@ class SettingsViewModel(
         val normalizedFrom = from.trim().uppercase()
         val normalizedTo = to.trim().uppercase()
         if (normalizedFrom.isBlank() || normalizedTo.isBlank()) {
-            _uiState.value = _uiState.value.copy(actionStatus = "Enter valid currency codes.")
+            _uiState.value = _uiState.value.copy(
+                actionStatus = strings.get(R.string.error_invalid_currency_codes)
+            )
             return
         }
 
@@ -265,7 +290,9 @@ class SettingsViewModel(
                 lastUpdatedMillis = System.currentTimeMillis()
             )
         )
-        _uiState.value = _uiState.value.copy(actionStatus = "Manual rate saved.")
+        _uiState.value = _uiState.value.copy(
+            actionStatus = strings.get(R.string.status_manual_rate_saved)
+        )
         refreshState()
     }
 
@@ -273,4 +300,5 @@ class SettingsViewModel(
         settingsRepository.removeManualRate(from, to)
         refreshState()
     }
+
 }

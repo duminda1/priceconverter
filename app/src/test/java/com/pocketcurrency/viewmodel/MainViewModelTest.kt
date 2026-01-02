@@ -55,7 +55,8 @@ class MainViewModelTest {
                 mockk(relaxed = true),
                 rateRepository,
                 settingsRepository,
-                rateUpdateRepository
+                rateUpdateRepository,
+                TestStringProvider()
             )
 
             advanceUntilIdle()
@@ -85,7 +86,8 @@ class MainViewModelTest {
             mockk(relaxed = true),
             rateRepository,
             settingsRepository,
-            rateUpdateRepository
+            rateUpdateRepository,
+            TestStringProvider()
         )
 
         viewModel.setRealtimeEnabled(true)
@@ -123,7 +125,8 @@ class MainViewModelTest {
             mockk(relaxed = true),
             rateRepository,
             settingsRepository,
-            rateUpdateRepository
+            rateUpdateRepository,
+            TestStringProvider()
         )
 
         viewModel.convertPrice(10.0, "usd", "aud")
@@ -156,7 +159,8 @@ class MainViewModelTest {
             mockk(relaxed = true),
             rateRepository,
             settingsRepository,
-            rateUpdateRepository
+            rateUpdateRepository,
+            TestStringProvider()
         )
 
         viewModel.convertPrice(10.0, "USD", "AUD")
@@ -181,7 +185,8 @@ class MainViewModelTest {
             mockk(relaxed = true),
             rateRepository,
             settingsRepository,
-            rateUpdateRepository
+            rateUpdateRepository,
+            TestStringProvider()
         )
 
         viewModel.convertPrice(10.0, "USD", "AUD")
@@ -221,7 +226,8 @@ class MainViewModelTest {
             mockk(relaxed = true),
             rateRepository,
             settingsRepository,
-            rateUpdateRepository
+            rateUpdateRepository,
+            TestStringProvider()
         )
 
         viewModel.convertPrice(10.0, "USD", "AUD")
@@ -244,7 +250,8 @@ class MainViewModelTest {
             mockk(relaxed = true),
             rateRepository,
             settingsRepository,
-            rateUpdateRepository
+            rateUpdateRepository,
+            TestStringProvider()
         )
     }
 
