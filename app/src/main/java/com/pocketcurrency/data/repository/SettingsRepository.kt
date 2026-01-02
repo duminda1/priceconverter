@@ -23,7 +23,9 @@ data class ApiUsageState(
 
 class SettingsRepository(context: Context) {
 
-    private val prefs: SharedPreferences = createEncryptedPrefs(context)
+    private val prefs: SharedPreferences by lazy {
+        createEncryptedPrefs(context)
+    }
 
     fun getService(): String {
         val stored = prefs.getString(Constants.PREFS_SERVICE, null)
@@ -311,6 +313,30 @@ class SettingsRepository(context: Context) {
     }
 
     private fun createEncryptedPrefs(context: Context): SharedPreferences {
+        return try {
+            createEncryptedPrefsInternal(context)
+        } catch (e: Exception) {
+            // Covers AEADBadTagException, KeyStoreException, etc.
+            // This happens when prefs are restored but keystore key is missing.
+
+            // 1. Delete encrypted SharedPreferences
+            runCatching {
+                context.deleteSharedPreferences(Constants.PREFS_SECURE_NAME)
+            }
+
+            // 2. Delete master key entry (important!)
+            runCatching {
+                val ks = java.security.KeyStore.getInstance("AndroidKeyStore")
+                ks.load(null)
+                ks.deleteEntry(MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+            }
+
+            // 3. Recreate fresh prefs
+            createEncryptedPrefsInternal(context)
+        }
+    }
+
+    private fun createEncryptedPrefsInternal(context: Context): SharedPreferences {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()

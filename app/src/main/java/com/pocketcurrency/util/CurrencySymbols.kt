@@ -2,6 +2,10 @@ package com.pocketcurrency.utils
 
 object CurrencySymbols {
     val symbolToCode: Map<String, String> = mapOf(
+        "US$" to "USD",
+        "NZ$" to "NZD",
+        "A$" to "AUD",
+        "C$" to "CAD",
         "€" to "EUR",
         "$" to "USD",
         "£" to "GBP",

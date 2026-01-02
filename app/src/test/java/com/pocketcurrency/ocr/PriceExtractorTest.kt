@@ -128,6 +128,25 @@ class PriceExtractorTest {
     }
 
     @Test
+    fun detects_multi_character_currency_symbols() {
+        val extractor = PriceExtractor()
+
+        val cases = listOf(
+            "A$12.50" to Expected(12.50, "AUD"),
+            "C$9.99" to Expected(9.99, "CAD"),
+            "NZ$19.95" to Expected(19.95, "NZD"),
+            "US$7.00" to Expected(7.00, "USD")
+        )
+
+        cases.forEach { (text, expected) ->
+            val result = extractor.extract(text)
+            assertNotNull(result)
+            assertEquals(expected.amount, result!!.amount, 0.001)
+            assertEquals(expected.currencyCode, result.currencyCode)
+        }
+    }
+
+    @Test
     fun returns_null_when_no_number_found() {
         val extractor = PriceExtractor()
         val result = extractor.extract("No price here")

@@ -1,26 +1,36 @@
 package com.pocketcurrency.data.api
 
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import com.pocketcurrency.utils.Constants
 import okhttp3.OkHttpClient
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-object RetrofitInstance {
-    val api: ExchangeRateApi by lazy {
-        val client = OkHttpClient.Builder()
+internal object RetrofitClient {
+    private val client: OkHttpClient by lazy {
+        OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
             .writeTimeout(10, TimeUnit.SECONDS)
             .callTimeout(15, TimeUnit.SECONDS)
             .retryOnConnectionFailure(true)
             .build()
+    }
 
-        Retrofit.Builder()
-            .baseUrl(Constants.EXCHANGE_API_BASE_URL)
+    private val converterFactory by lazy { GsonConverterFactory.create() }
+
+    fun retrofit(baseUrl: String): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
             .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
+            .addConverterFactory(converterFactory)
             .build()
+    }
+}
+
+object RetrofitInstance {
+    val api: ExchangeRateApi by lazy {
+        RetrofitClient.retrofit(Constants.EXCHANGE_API_BASE_URL)
             .create(ExchangeRateApi::class.java)
     }
 }

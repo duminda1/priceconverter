@@ -37,8 +37,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import android.text.format.DateUtils
 import com.google.mlkit.vision.common.InputImage
-import java.text.DecimalFormat
-import java.text.DecimalFormatSymbols
+import java.text.NumberFormat
 import java.util.Locale
 import com.pocketcurrency.ocr.PriceExtractor
 import com.pocketcurrency.ocr.TextRecognizerHelper
@@ -50,6 +49,7 @@ import com.pocketcurrency.domain.model.ServiceStatusType
 import com.pocketcurrency.utils.Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -93,18 +93,103 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     val canUseRealtime = serviceReady && realtimeAvailable
     val canConvert = manualRateAvailable || savedRateAvailable || canUseRealtime
     val showRealtimeHelper = !realtimeEnabled || !canUseRealtime
-    val amountValue = amountInput.toDoubleOrNull()
+    val amountValue = parseAmountInput(amountInput)
     val convertEnabled =
         amountValue != null && normalizedFrom.isNotBlank() && normalizedTo.isNotBlank()
     val showCameraHint = liveScanEnabled && scanAmount == null
 
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val lifecycleOwner = LocalLifecycleOwner.current
-    val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    val previewView = remember(context) { androidx.camera.view.PreviewView(context) }
+    val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
+    var imageAnalysis by remember { mutableStateOf<ImageAnalysis?>(null) }
+    var cameraExecutor by remember { mutableStateOf<ExecutorService?>(null) }
 
-    DisposableEffect(cameraExecutor) {
-        // Ensure the executor is released when the composable leaves composition.
-        onDispose { cameraExecutor.shutdown() }
+    DisposableEffect(liveScanEnabled, lifecycleOwner, previewView) {
+        var disposed = false
+
+        if (liveScanEnabled) {
+            val executor = Executors.newSingleThreadExecutor()
+            cameraExecutor = executor
+
+            cameraProviderFuture.addListener({
+                val cameraProvider = cameraProviderFuture.get()
+                if (disposed) {
+                    cameraProvider.unbindAll()
+                    executor.shutdown()
+                    return@addListener
+                }
+
+                val preview = Preview.Builder().build().also {
+                    it.setSurfaceProvider(previewView.surfaceProvider)
+                }
+
+                val analysis = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                imageAnalysis = analysis
+
+                val textRecognizer = TextRecognizerHelper()
+                val priceExtractor = PriceExtractor()
+
+                analysis.setAnalyzer(executor) { imageProxy ->
+                    val mediaImage = imageProxy.image
+                    if (mediaImage == null) {
+                        imageProxy.close()
+                        return@setAnalyzer
+                    }
+                    val inputImage = InputImage.fromMediaImage(
+                        mediaImage,
+                        imageProxy.imageInfo.rotationDegrees
+                    )
+                    scope.launch(Dispatchers.Default) {
+                        try {
+                            val text = textRecognizer.recognizeText(inputImage)
+                            val detected = priceExtractor.extract(text)
+                            if (detected != null) {
+                                viewModel.onScanResult(
+                                    amount = detected.amount,
+                                    currencyCode = detected.currencyCode,
+                                    isConfident = detected.isConfident
+                                )
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        } finally {
+                            imageProxy.close()
+                        }
+                    }
+                }
+
+                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+                try {
+                    cameraProvider.unbindAll()
+                    cameraProvider.bindToLifecycle(
+                        lifecycleOwner,
+                        cameraSelector,
+                        preview,
+                        analysis
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }, mainExecutor)
+        } else {
+            cameraProviderFuture.addListener({
+                cameraProviderFuture.get().unbindAll()
+            }, mainExecutor)
+        }
+
+        onDispose {
+            disposed = true
+            imageAnalysis?.clearAnalyzer()
+            imageAnalysis = null
+            cameraExecutor?.shutdown()
+            cameraExecutor = null
+            cameraProviderFuture.addListener({
+                cameraProviderFuture.get().unbindAll()
+            }, mainExecutor)
+        }
     }
 
     LaunchedEffect(scanAmount) {
@@ -219,65 +304,10 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                         Box(
                             modifier = Modifier.fillMaxSize()
                         ) {
-                            AndroidView(factory = { ctx ->
-                                val previewView = androidx.camera.view.PreviewView(ctx)
-                                cameraProviderFuture.addListener({
-                                    val cameraProvider = cameraProviderFuture.get()
-                                    val preview = Preview.Builder().build().also {
-                                        it.setSurfaceProvider(previewView.surfaceProvider)
-                                    }
-
-                                    val imageAnalysis = ImageAnalysis.Builder()
-                                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                                        .build()
-
-                                    val textRecognizer = TextRecognizerHelper()
-                                    val priceExtractor = PriceExtractor()
-
-                                    imageAnalysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                                        val mediaImage = imageProxy.image
-                                        if (mediaImage == null) {
-                                            imageProxy.close()
-                                            return@setAnalyzer
-                                        }
-                                        val inputImage = InputImage.fromMediaImage(
-                                            mediaImage,
-                                            imageProxy.imageInfo.rotationDegrees
-                                        )
-                                        scope.launch(Dispatchers.Default) {
-                                            try {
-                                                val text = textRecognizer.recognizeText(inputImage)
-                                                val detected = priceExtractor.extract(text)
-                                                if (detected != null) {
-                                                    viewModel.onScanResult(
-                                                        amount = detected.amount,
-                                                        currencyCode = detected.currencyCode,
-                                                        isConfident = detected.isConfident
-                                                    )
-                                                }
-                                            } catch (e: Exception) {
-                                                e.printStackTrace()
-                                            } finally {
-                                                imageProxy.close()
-                                            }
-                                        }
-                                    }
-
-                                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                                    try {
-                                        cameraProvider.unbindAll()
-                                        cameraProvider.bindToLifecycle(
-                                            lifecycleOwner,
-                                            cameraSelector,
-                                            preview,
-                                            imageAnalysis
-                                        )
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                }, ContextCompat.getMainExecutor(ctx))
-                                previewView
-                            })
+                            AndroidView(
+                                modifier = Modifier.fillMaxSize(),
+                                factory = { previewView }
+                            )
 
                             if (showCameraHint) {
                                 CameraHintOverlay(
@@ -765,20 +795,51 @@ private fun CurrencyInputDropdown(
 }
 
 private fun filterAmountInput(input: String): String {
-    val filtered = input.filter { it.isDigit() || it == '.' }
-    val firstDotIndex = filtered.indexOf('.')
-    if (firstDotIndex == -1) {
+    val filtered = input.filter { it.isDigit() || it == '.' || it == ',' }
+    val lastSeparatorIndex = filtered.lastIndexOfAny(charArrayOf('.', ','))
+    if (lastSeparatorIndex == -1) {
         return filtered
     }
-    val beforeDot = filtered.substring(0, firstDotIndex + 1)
-    val afterDot = filtered.substring(firstDotIndex + 1).replace(".", "")
-    return beforeDot + afterDot
+    val beforeSeparator = filtered.substring(0, lastSeparatorIndex).replace(".", "").replace(",", "")
+    val separator = filtered[lastSeparatorIndex]
+    val afterSeparator = filtered.substring(lastSeparatorIndex + 1).replace(".", "").replace(",", "")
+    return beforeSeparator + separator + afterSeparator
 }
 
 private fun formatAmountInput(amount: Double): String {
-    val symbols = DecimalFormatSymbols(Locale.US)
-    val formatter = DecimalFormat("0.##", symbols)
+    val formatter = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
+        maximumFractionDigits = 2
+        minimumFractionDigits = 0
+        isGroupingUsed = false
+    }
     return formatter.format(amount)
+}
+
+private fun parseAmountInput(input: String): Double? {
+    val filtered = input.filter { it.isDigit() || it == '.' || it == ',' }
+    if (filtered.isBlank()) {
+        return null
+    }
+    val lastSeparatorIndex = filtered.lastIndexOfAny(charArrayOf('.', ','))
+    val normalized = if (lastSeparatorIndex == -1) {
+        filtered
+    } else {
+        val beforeSeparator = filtered.substring(0, lastSeparatorIndex)
+            .replace(".", "")
+            .replace(",", "")
+        val afterSeparator = filtered.substring(lastSeparatorIndex + 1)
+            .replace(".", "")
+            .replace(",", "")
+        if (beforeSeparator.isEmpty() && afterSeparator.isEmpty()) {
+            return null
+        }
+        if (afterSeparator.isEmpty()) {
+            "$beforeSeparator."
+        } else {
+            "$beforeSeparator.$afterSeparator"
+        }
+    }
+    return normalized.toDoubleOrNull()
 }
 
 private fun serviceStatusLabel(type: ServiceStatusType): String {
