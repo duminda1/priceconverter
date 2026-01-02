@@ -37,6 +37,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import android.text.format.DateUtils
+import android.util.Log
 import com.google.mlkit.vision.common.InputImage
 import java.text.NumberFormat
 import java.util.Locale
@@ -53,6 +54,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+
+private const val TAG = "MainScreen"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -167,7 +170,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                         )
                                     }
                                 } catch (e: Exception) {
-                                    e.printStackTrace()
+                                    Log.e(TAG, "Failed to recognize live scan text", e)
                                 } finally {
                                     imageProxy.close()
                                 }
@@ -186,7 +189,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                         analysis
                     )
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to bind camera for live scan", e)
                 }
             }, mainExecutor)
         } else {

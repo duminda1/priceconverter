@@ -1,6 +1,7 @@
 package com.pocketcurrency.ui.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.pocketcurrency.data.network.NetworkMonitor
@@ -33,8 +34,12 @@ class RateViewModel(application: Application) : AndroidViewModel(application) {
                 val result = getRatesUseCase.execute(baseCurrency, targetCurrency)
                 _rate.value = result.rate?.rate ?: 0.0
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to fetch exchange rates", e)
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "RateViewModel"
     }
 }
