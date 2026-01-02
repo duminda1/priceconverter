@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.input.KeyboardType
@@ -41,6 +42,7 @@ import java.text.NumberFormat
 import java.util.Locale
 import com.pocketcurrency.ocr.PriceExtractor
 import com.pocketcurrency.ocr.TextRecognizerHelper
+import com.pocketcurrency.R
 import com.pocketcurrency.ui.component.PriceCard
 import com.pocketcurrency.ui.Screen
 import com.pocketcurrency.viewmodel.ConversionState
@@ -97,6 +99,11 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     val convertEnabled =
         amountValue != null && normalizedFrom.isNotBlank() && normalizedTo.isNotBlank()
     val showCameraHint = liveScanEnabled && scanAmount == null
+    val convertLabel = stringResource(R.string.action_convert)
+    val fromLabel = stringResource(R.string.main_currency_from_label)
+    val toLabel = stringResource(R.string.main_currency_to_label)
+    val fromPlaceholder = stringResource(R.string.main_currency_from_placeholder)
+    val toPlaceholder = stringResource(R.string.main_currency_to_placeholder)
 
     val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -250,7 +257,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text("PocketCurrency") },
+                title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     TextButton(
                         onClick = { navController.navigate(Screen.Settings.route) },
@@ -259,7 +266,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                             contentColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Text("Settings")
+                        Text(stringResource(R.string.action_settings))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -319,7 +326,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
 
                             if (showCameraHint) {
                                 CameraHintOverlay(
-                                    text = "Looking for prices..."
+                                    text = stringResource(R.string.main_camera_hint)
                                 )
                             }
 
@@ -332,14 +339,15 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 tonalElevation = 2.dp
                             ) {
                                 Text(
-                                    text = "Live scan",
+                                    text = stringResource(R.string.main_live_scan_label),
                                     style = MaterialTheme.typography.labelLarge,
                                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
 
-                            if (scanCurrencyConfident && !scanCurrency.isNullOrBlank()) {
+                            val detectedCurrency = scanCurrency
+                            if (scanCurrencyConfident && !detectedCurrency.isNullOrBlank()) {
                                 Surface(
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
@@ -349,7 +357,10 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                     tonalElevation = 2.dp
                                 ) {
                                     Text(
-                                        text = "Detected ${scanCurrency}",
+                                        text = stringResource(
+                                            R.string.main_detected_currency,
+                                            detectedCurrency
+                                        ),
                                         style = MaterialTheme.typography.labelLarge,
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -364,9 +375,12 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 .padding(16.dp),
                             verticalArrangement = Arrangement.Center
                         ) {
-                            Text("Live scan is off", style = MaterialTheme.typography.titleMedium)
                             Text(
-                                "Enable it from the toggle below or in Settings.",
+                                stringResource(R.string.main_live_scan_off_title),
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                stringResource(R.string.main_live_scan_off_subtitle),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -392,7 +406,10 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 modifier = Modifier.padding(10.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Text("Manual entry", style = MaterialTheme.typography.titleMedium)
+                                Text(
+                                    stringResource(R.string.main_manual_entry_title),
+                                    style = MaterialTheme.typography.titleMedium
+                                )
 
                                 val amountFieldMinHeight = 56.dp
                                 val currencyFieldMinHeight = amountFieldMinHeight * 0.9f
@@ -402,8 +419,8 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                     onValueChange = { value ->
                                         amountInput = filterAmountInput(value)
                                     },
-                                    label = { Text("Amount") },
-                                    placeholder = { Text("e.g. 18.50") },
+                                    label = { Text(stringResource(R.string.main_amount_label)) },
+                                    placeholder = { Text(stringResource(R.string.main_amount_placeholder)) },
                                     singleLine = true,
                                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                                     modifier = Modifier
@@ -419,9 +436,9 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 ) {
                                     CurrencyInputDropdown(
                                         modifier = Modifier.weight(1f),
-                                        label = "From",
+                                        label = fromLabel,
                                         value = fromCurrency,
-                                        placeholder = "USD",
+                                        placeholder = fromPlaceholder,
                                         options = manualCurrencies,
                                         onValueChange = {
                                             fromCurrency = it
@@ -442,15 +459,17 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                     ) {
                                         Icon(
                                             imageVector = Icons.Filled.SwapHoriz,
-                                            contentDescription = "Swap currencies"
+                                            contentDescription = stringResource(
+                                                R.string.content_swap_currencies
+                                            )
                                         )
                                     }
 
                                     CurrencyInputDropdown(
                                         modifier = Modifier.weight(1f),
-                                        label = "To",
+                                        label = toLabel,
                                         value = toCurrency,
-                                        placeholder = "AUD",
+                                        placeholder = toPlaceholder,
                                         options = manualCurrencies,
                                         onValueChange = {
                                             toCurrency = it
@@ -467,7 +486,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .heightIn(min = 48.dp)
-                                        .semantics { contentDescription = "Convert" },
+                                        .semantics { contentDescription = convertLabel },
                                     shape = RoundedCornerShape(14.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.primary,
@@ -475,13 +494,13 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                     ),
                                     enabled = convertEnabled
                                 ) {
-                                    Text("Convert")
+                                    Text(convertLabel)
                                 }
                                 if (!canConvert) {
                                     val noRatesMessage = if (provider == Constants.PROVIDER_FRANKFURTER) {
-                                        "No rates available. Refresh a saved pair or add an offline rate."
+                                        stringResource(R.string.main_no_rates_saved_pair)
                                     } else {
-                                        "No rates available. Add an offline rate or API key."
+                                        stringResource(R.string.main_no_rates_add_offline_or_api)
                                     }
                                     Text(
                                         noRatesMessage,
@@ -507,7 +526,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                                     ) {
                                         Text(
-                                            "Waiting for a price to convert.",
+                                            stringResource(R.string.main_waiting_price),
                                             style = MaterialTheme.typography.bodyMedium,
                                             modifier = Modifier.padding(12.dp),
                                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -524,7 +543,10 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                             modifier = Modifier.padding(12.dp),
                                             verticalArrangement = Arrangement.spacedBy(8.dp)
                                         ) {
-                                            Text("Converting...", style = MaterialTheme.typography.titleMedium)
+                                            Text(
+                                                stringResource(R.string.main_converting),
+                                                style = MaterialTheme.typography.titleMedium
+                                            )
                                             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                                         }
                                     }
@@ -552,7 +574,10 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                                     color = labelColor
                                                 )
                                                 Text(
-                                                    text = "· Updated $relativeUpdated",
+                                                    text = stringResource(
+                                                        R.string.main_status_updated,
+                                                        relativeUpdated
+                                                    ),
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     color = reassuranceColor
                                                 )
@@ -560,13 +585,15 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                                     onClick = { showRateInfo = true },
                                                     modifier = Modifier.size(42.dp)
                                                 ) {
-                                                    Icon(
-                                                        imageVector = Icons.Outlined.Info,
-                                                        contentDescription = "Rate source information",
-                                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                                    )
-                                                }
+                                                Icon(
+                                                    imageVector = Icons.Outlined.Info,
+                                                    contentDescription = stringResource(
+                                                        R.string.content_rate_source_info
+                                                    ),
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
                                             }
+                                        }
                                         }
                                         PriceCard(
                                             modifier = Modifier.offset(y = (-1).dp),
@@ -577,12 +604,12 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                                 onDismissRequest = { showRateInfo = false },
                                                 confirmButton = {
                                                     TextButton(onClick = { showRateInfo = false }) {
-                                                        Text("Got it")
+                                                        Text(stringResource(R.string.action_got_it))
                                                     }
                                                 },
                                                 text = {
                                                     Text(
-                                                        "PocketCurrency keeps working even without internet using saved rates."
+                                                        stringResource(R.string.main_rate_info_body)
                                                     )
                                                 }
                                             )
@@ -629,7 +656,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            "Realtime",
+                                            stringResource(R.string.main_realtime_label),
                                             style = MaterialTheme.typography.labelSmall
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -642,7 +669,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                     }
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Text(
-                                            "Scan",
+                                            stringResource(R.string.main_scan_label),
                                             style = MaterialTheme.typography.labelSmall
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))
@@ -655,7 +682,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 }
                                 if (showRealtimeHelper) {
                                     Text(
-                                        "Realtime updates require internet access and a supported rate service.",
+                                        stringResource(R.string.main_realtime_helper),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.padding(top = 6.dp)
@@ -756,6 +783,10 @@ private fun CurrencyInputDropdown(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val filtered = options
+    val selectorDescription = stringResource(
+        R.string.content_currency_selector_description,
+        label
+    )
 
     Box(modifier = modifier) {
         OutlinedTextField(
@@ -767,7 +798,7 @@ private fun CurrencyInputDropdown(
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = minHeight)
-                .semantics { contentDescription = "$label currency selector" }
+                .semantics { contentDescription = selectorDescription }
                 .onFocusChanged {
                     if (it.isFocused && options.isNotEmpty()) {
                         expanded = true
@@ -779,7 +810,9 @@ private fun CurrencyInputDropdown(
                     IconButton(onClick = { expanded = true }) {
                         Icon(
                             imageVector = Icons.Filled.ArrowDropDown,
-                            contentDescription = "Show options"
+                            contentDescription = stringResource(
+                                R.string.content_show_options
+                            )
                         )
                     }
                 }
@@ -850,11 +883,12 @@ private fun parseAmountInput(input: String): Double? {
     return normalized.toDoubleOrNull()
 }
 
+@Composable
 private fun serviceStatusLabel(type: ServiceStatusType): String {
     return when (type) {
-        ServiceStatusType.LIVE -> "Live updates"
-        ServiceStatusType.SAVED -> "Saved for offline use"
-        ServiceStatusType.MANUAL -> "Works offline"
+        ServiceStatusType.LIVE -> stringResource(R.string.main_status_live)
+        ServiceStatusType.SAVED -> stringResource(R.string.main_status_saved)
+        ServiceStatusType.MANUAL -> stringResource(R.string.main_status_manual)
     }
 }
 

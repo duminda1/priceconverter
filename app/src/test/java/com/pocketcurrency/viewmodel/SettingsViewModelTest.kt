@@ -34,7 +34,8 @@ class SettingsViewModelTest {
         val viewModel = SettingsViewModel(
             mockk(relaxed = true),
             settingsRepository,
-            rateUpdateRepository
+            rateUpdateRepository,
+            TestStringProvider()
         )
 
         viewModel.onApiKeyChanged(" ")
@@ -60,7 +61,8 @@ class SettingsViewModelTest {
         val viewModel = SettingsViewModel(
             mockk(relaxed = true),
             settingsRepository,
-            rateUpdateRepository
+            rateUpdateRepository,
+            TestStringProvider()
         )
 
         viewModel.onApiKeyChanged("NEWKEY")
@@ -88,7 +90,8 @@ class SettingsViewModelTest {
         val viewModel = SettingsViewModel(
             mockk(relaxed = true),
             settingsRepository,
-            rateUpdateRepository
+            rateUpdateRepository,
+            TestStringProvider()
         )
 
         viewModel.onApiKeyChanged("BAD")
@@ -105,7 +108,8 @@ class SettingsViewModelTest {
         val viewModel = SettingsViewModel(
             mockk(relaxed = true),
             baseSettingsRepository(),
-            mockk(relaxed = true)
+            mockk(relaxed = true),
+            TestStringProvider()
         )
 
         viewModel.fetchAndReplaceRate(null, " ", "USD")
@@ -129,7 +133,8 @@ class SettingsViewModelTest {
             val viewModel = SettingsViewModel(
                 mockk(relaxed = true),
                 settingsRepository,
-                rateUpdateRepository
+                rateUpdateRepository,
+                TestStringProvider()
             )
             val original = CurrencyPairRate("EUR", "GBP", 0.9, 10L)
 
@@ -148,7 +153,8 @@ class SettingsViewModelTest {
         val viewModel = SettingsViewModel(
             mockk(relaxed = true),
             settingsRepository,
-            mockk(relaxed = true)
+            mockk(relaxed = true),
+            TestStringProvider()
         )
 
         viewModel.refreshSavedRates()
@@ -184,7 +190,8 @@ class SettingsViewModelTest {
             val viewModel = SettingsViewModel(
                 mockk(relaxed = true),
                 settingsRepository,
-                rateUpdateRepository
+                rateUpdateRepository,
+                TestStringProvider()
             )
 
             viewModel.refreshSavedRates()
@@ -203,7 +210,8 @@ class SettingsViewModelTest {
         val viewModel = SettingsViewModel(
             mockk(relaxed = true),
             baseSettingsRepository(),
-            mockk(relaxed = true)
+            mockk(relaxed = true),
+            TestStringProvider()
         )
 
         viewModel.upsertManualRate("", "USD", 1.0)
@@ -218,7 +226,8 @@ class SettingsViewModelTest {
             val viewModel = SettingsViewModel(
                 mockk(relaxed = true),
                 settingsRepository,
-                mockk(relaxed = true)
+                mockk(relaxed = true),
+                TestStringProvider()
             )
 
             viewModel.upsertManualRate("usd", "aud", 1.25)
