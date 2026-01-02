@@ -5,7 +5,7 @@ import com.pocketcurrency.data.model.ApiError
 import com.pocketcurrency.data.model.ConvertResponse
 import com.pocketcurrency.data.model.Info
 import com.pocketcurrency.data.model.Query
-import com.squareup.moshi.JsonDataException
+import com.google.gson.JsonParseException
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -88,7 +88,7 @@ class ExchangeRatesProviderTest {
 
     @Test
     fun fetchRate_returnsExceptionMessageForInvalidJson() = runBlocking {
-        val api = FakeExchangeRateApi(exception = JsonDataException("Malformed JSON"))
+        val api = FakeExchangeRateApi(exception = JsonParseException("Malformed JSON"))
         val provider = ExchangeRatesProvider(api)
 
         val result = provider.fetchRate("USD", "AUD", 1.0, apiKey = "KEY")

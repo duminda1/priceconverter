@@ -18,11 +18,16 @@ class PriceExtractor {
         "\\d(?:[\\d., ]*\\d)?"
     )
     private val codePattern = Pattern.compile("""\b[A-Z]{3}\b""")
-    private val symbolPattern = Pattern.compile("""[€$£¥₹₩₱₫฿₴₦₪₺]""")
+    private val symbolToCode = CurrencySymbols.symbolToCode
+    private val symbolPattern = run {
+        val symbols = symbolToCode.keys
+            .sortedWith(compareByDescending<String> { it.length }.thenBy { it })
+            .joinToString("|") { Pattern.quote(it) }
+        Pattern.compile("""\s*($symbols)\s*""", Pattern.CASE_INSENSITIVE)
+    }
     private val currencyCodes = Currency.getAvailableCurrencies()
         .map { it.currencyCode }
         .toSet()
-    private val symbolToCode = CurrencySymbols.symbolToCode
 
     /**
      * Extracts the most likely price and optional currency information from OCR text.
@@ -140,14 +145,14 @@ class PriceExtractor {
         val tokens = mutableListOf<CurrencyToken>()
         val symbolMatcher = symbolPattern.matcher(text)
         while (symbolMatcher.find()) {
-            val symbol = symbolMatcher.group()
-            val code = symbolToCode[symbol]
+            val symbol = symbolMatcher.group(1) ?: continue
+            val code = symbolToCode[symbol.uppercase(Locale.ROOT)]
             if (code != null) {
                 tokens.add(
                     CurrencyToken(
                         code = code,
-                        start = symbolMatcher.start(),
-                        end = symbolMatcher.end(),
+                        start = symbolMatcher.start(1),
+                        end = symbolMatcher.end(1),
                         baseConfidence = 0.9
                     )
                 )
