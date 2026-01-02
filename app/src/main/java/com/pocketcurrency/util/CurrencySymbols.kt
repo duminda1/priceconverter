@@ -1,23 +1,26 @@
-package com.pocketcurrency.utils
+package com.pocketcurrency.util
 
 object CurrencySymbols {
-    val symbolToCode: Map<String, String> = mapOf(
-        "US$" to "USD",
-        "NZ$" to "NZD",
+    // Unambiguous symbols only.
+    val safeSymbolToCode: Map<String, String> = mapOf(
         "A$" to "AUD",
-        "C$" to "CAD",
+        "NZ$" to "NZD",
+        "HK$" to "HKD",
+        "S$" to "SGD",
         "€" to "EUR",
-        "$" to "USD",
-        "£" to "GBP",
-        "¥" to "JPY",
         "₹" to "INR",
+        "₽" to "RUB",
+        "₺" to "TRY",
         "₩" to "KRW",
-        "₱" to "PHP",
-        "₫" to "VND",
         "฿" to "THB",
-        "₴" to "UAH",
-        "₦" to "NGN",
-        "₪" to "ILS",
-        "₺" to "TRY"
+        "₫" to "VND",
+        "₪" to "ILS"
+    )
+
+    // Heuristic defaults for ambiguous symbols.
+    val fallbackSymbolToCode: Map<String, String> = mapOf(
+        "$" to "USD",
+        "¥" to "JPY",
+        "£" to "GBP"
     )
 }

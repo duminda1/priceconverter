@@ -133,9 +133,9 @@ class PriceExtractorTest {
 
         val cases = listOf(
             "A$12.50" to Expected(12.50, "AUD"),
-            "C$9.99" to Expected(9.99, "CAD"),
             "NZ$19.95" to Expected(19.95, "NZD"),
-            "US$7.00" to Expected(7.00, "USD")
+            "HK$7.00" to Expected(7.00, "HKD"),
+            "S$3.25" to Expected(3.25, "SGD")
         )
 
         cases.forEach { (text, expected) ->
