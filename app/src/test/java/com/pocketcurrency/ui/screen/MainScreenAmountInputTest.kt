@@ -1,25 +1,12 @@
 package com.pocketcurrency.ui.screen
 
+import com.pocketcurrency.util.AmountInputFormatter
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import java.util.Locale
 
 class MainScreenAmountInputTest {
-
-    private val mainScreenKtClass = Class.forName("com.pocketcurrency.ui.screen.MainScreenKt")
-    private val filterMethod = mainScreenKtClass.getDeclaredMethod(
-        "filterAmountInput",
-        String::class.java
-    ).apply { isAccessible = true }
-    private val formatMethod = mainScreenKtClass.getDeclaredMethod(
-        "formatAmountInput",
-        java.lang.Double.TYPE
-    ).apply { isAccessible = true }
-    private val parseMethod = mainScreenKtClass.getDeclaredMethod(
-        "parseAmountInput",
-        String::class.java
-    ).apply { isAccessible = true }
 
     @Test
     fun filterAmountInput_preservesUserSeparator() {
@@ -63,15 +50,15 @@ class MainScreenAmountInputTest {
     }
 
     private fun invokeFilter(input: String): String {
-        return filterMethod.invoke(null, input) as String
+        return AmountInputFormatter.filterInput(input)
     }
 
     private fun invokeFormat(amount: Double): String {
-        return formatMethod.invoke(null, amount) as String
+        return AmountInputFormatter.formatAmount(amount)
     }
 
     private fun invokeParse(input: String): Double? {
-        return parseMethod.invoke(null, input) as Double?
+        return AmountInputFormatter.parseInput(input)
     }
 
     private fun <T> withLocale(locale: Locale, block: () -> T): T {

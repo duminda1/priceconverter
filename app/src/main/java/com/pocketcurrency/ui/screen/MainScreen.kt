@@ -39,8 +39,6 @@ import androidx.navigation.NavHostController
 import android.text.format.DateUtils
 import android.util.Log
 import com.google.mlkit.vision.common.InputImage
-import java.text.NumberFormat
-import java.util.Locale
 import com.pocketcurrency.ocr.PriceExtractor
 import com.pocketcurrency.ocr.TextRecognizerHelper
 import com.pocketcurrency.R
@@ -50,6 +48,7 @@ import com.pocketcurrency.viewmodel.ConversionState
 import com.pocketcurrency.viewmodel.MainViewModel
 import com.pocketcurrency.domain.model.ServiceStatusType
 import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.AmountInputFormatter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
@@ -98,7 +97,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     val canUseRealtime = serviceReady && realtimeAvailable
     val canConvert = manualRateAvailable || savedRateAvailable || canUseRealtime
     val showRealtimeHelper = !realtimeEnabled || !canUseRealtime
-    val amountValue = parseAmountInput(amountInput)
+    val amountValue = AmountInputFormatter.parseInput(amountInput)
     val convertEnabled =
         amountValue != null && normalizedFrom.isNotBlank() && normalizedTo.isNotBlank()
     val showCameraHint = liveScanEnabled && scanAmount == null
@@ -211,7 +210,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     }
 
     LaunchedEffect(scanAmount) {
-        scanAmount?.let { amountInput = formatAmountInput(it) }
+        scanAmount?.let { amountInput = AmountInputFormatter.formatAmount(it) }
     }
 
     LaunchedEffect(scanCurrency, scanCurrencyConfident) {
@@ -420,7 +419,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 OutlinedTextField(
                                     value = amountInput,
                                     onValueChange = { value ->
-                                        amountInput = filterAmountInput(value)
+                                        amountInput = AmountInputFormatter.filterInput(value)
                                     },
                                     label = { Text(stringResource(R.string.main_amount_label)) },
                                     placeholder = { Text(stringResource(R.string.main_amount_placeholder)) },
@@ -836,54 +835,6 @@ private fun CurrencyInputDropdown(
             }
         }
     }
-}
-
-private fun filterAmountInput(input: String): String {
-    val filtered = input.filter { it.isDigit() || it == '.' || it == ',' }
-    val lastSeparatorIndex = filtered.lastIndexOfAny(charArrayOf('.', ','))
-    if (lastSeparatorIndex == -1) {
-        return filtered
-    }
-    val beforeSeparator = filtered.substring(0, lastSeparatorIndex).replace(".", "").replace(",", "")
-    val separator = filtered[lastSeparatorIndex]
-    val afterSeparator = filtered.substring(lastSeparatorIndex + 1).replace(".", "").replace(",", "")
-    return beforeSeparator + separator + afterSeparator
-}
-
-private fun formatAmountInput(amount: Double): String {
-    val formatter = NumberFormat.getNumberInstance(Locale.getDefault()).apply {
-        maximumFractionDigits = 2
-        minimumFractionDigits = 0
-        isGroupingUsed = false
-    }
-    return formatter.format(amount)
-}
-
-private fun parseAmountInput(input: String): Double? {
-    val filtered = input.filter { it.isDigit() || it == '.' || it == ',' }
-    if (filtered.isBlank()) {
-        return null
-    }
-    val lastSeparatorIndex = filtered.lastIndexOfAny(charArrayOf('.', ','))
-    val normalized = if (lastSeparatorIndex == -1) {
-        filtered
-    } else {
-        val beforeSeparator = filtered.substring(0, lastSeparatorIndex)
-            .replace(".", "")
-            .replace(",", "")
-        val afterSeparator = filtered.substring(lastSeparatorIndex + 1)
-            .replace(".", "")
-            .replace(",", "")
-        if (beforeSeparator.isEmpty() && afterSeparator.isEmpty()) {
-            return null
-        }
-        if (afterSeparator.isEmpty()) {
-            "$beforeSeparator."
-        } else {
-            "$beforeSeparator.$afterSeparator"
-        }
-    }
-    return normalized.toDoubleOrNull()
 }
 
 @Composable

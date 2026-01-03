@@ -1,7 +1,6 @@
 package com.pocketcurrency.viewmodel
 
 import android.app.Application
-import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.pocketcurrency.R
@@ -37,10 +36,7 @@ class MainViewModel(
 
     private val convertCurrencyUseCase = ConvertCurrencyUseCase()
 
-    private companion object {
-        private const val SCAN_DEBOUNCE_DELAY_MS = 900L
-        private const val SCAN_MIN_INTERVAL_MS = 350L
-    }
+    private val scanViewModel = ScanViewModel()
 
     private val _conversionState = MutableStateFlow<ConversionState>(ConversionState.Idle)
     val conversionState: StateFlow<ConversionState> = _conversionState
@@ -92,19 +88,11 @@ class MainViewModel(
     private val _serviceStatus = MutableStateFlow<ServiceStatus?>(null)
     val serviceStatus: StateFlow<ServiceStatus?> = _serviceStatus
 
-    private val _scanAmount = MutableStateFlow<Double?>(null)
-    val scanAmount: StateFlow<Double?> = _scanAmount
+    val scanAmount: StateFlow<Double?> = scanViewModel.scanAmount
 
-    private val _scanCurrency = MutableStateFlow<String?>(null)
-    val scanCurrency: StateFlow<String?> = _scanCurrency
+    val scanCurrency: StateFlow<String?> = scanViewModel.scanCurrency
 
-    private val _scanCurrencyConfident = MutableStateFlow(false)
-    val scanCurrencyConfident: StateFlow<Boolean> = _scanCurrencyConfident
-
-    private var lastScanAt = 0L
-    private var lastScanAmount: Double? = null
-    private var lastScanCurrency: String? = null
-    private var lastScanConfident = false
+    val scanCurrencyConfident: StateFlow<Boolean> = scanViewModel.scanCurrencyConfident
 
     private val _usageWarning = MutableStateFlow<String?>(null)
     val usageWarning: StateFlow<String?> = _usageWarning
@@ -238,25 +226,7 @@ class MainViewModel(
     }
 
     fun onScanResult(amount: Double, currencyCode: String?, isConfident: Boolean) {
-        val now = SystemClock.elapsedRealtime()
-        val amountChanged =
-            lastScanAmount == null || kotlin.math.abs(lastScanAmount!! - amount) > 0.01
-        val currencyChanged = lastScanCurrency != currencyCode || lastScanConfident != isConfident
-        if (!amountChanged && !currencyChanged && now - lastScanAt < SCAN_DEBOUNCE_DELAY_MS) {
-            return
-        }
-        if (now - lastScanAt < SCAN_MIN_INTERVAL_MS) {
-            return
-        }
-
-        lastScanAt = now
-        lastScanAmount = amount
-        lastScanCurrency = currencyCode
-        lastScanConfident = isConfident
-
-        _scanAmount.value = amount
-        _scanCurrency.value = currencyCode
-        _scanCurrencyConfident.value = isConfident
+        scanViewModel.onScanResult(amount, currencyCode, isConfident)
     }
 
 }
