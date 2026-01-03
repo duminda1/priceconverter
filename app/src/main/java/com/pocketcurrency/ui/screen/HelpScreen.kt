@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.pocketcurrency.R
@@ -53,7 +54,7 @@ fun HelpScreen(navController: NavHostController) {
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text("Help") },
+                title = { Text(stringResource(R.string.help_title)) },
                 navigationIcon = {
                     TextButton(
                         onClick = { navController.popBackStack() },
@@ -62,7 +63,7 @@ fun HelpScreen(navController: NavHostController) {
                             contentColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Text("Back")
+                        Text(stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -123,7 +124,7 @@ private fun HelpContent(helpText: String) {
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.Top
                 ) {
-                    Text("•", style = bodyStyle)
+                    Text(stringResource(R.string.list_bullet), style = bodyStyle)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(cleanInlineMarkdown(line.removePrefix("- ")), style = bodyStyle)
                 }

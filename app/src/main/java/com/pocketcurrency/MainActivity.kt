@@ -23,7 +23,11 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (!isGranted) {
-                Toast.makeText(this, "Camera permission is required to scan prices", Toast.LENGTH_SHORT).show()
+                Toast.makeText(
+                    this,
+                    getString(R.string.permission_camera_required),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
 

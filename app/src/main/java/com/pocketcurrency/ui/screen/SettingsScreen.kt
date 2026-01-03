@@ -40,10 +40,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.navigation.NavHostController
+import com.pocketcurrency.R
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.ui.Screen
 import com.pocketcurrency.utils.Constants
@@ -81,10 +83,10 @@ fun SettingsScreen(
     }
     val uriHandler = LocalUriHandler.current
     val selectedProvider = uiState.providers.firstOrNull { it.id == uiState.service }
-    val frankfurterLabel = "Daily updates (recommended)"
-    val advancedLabel = "Advanced: Custom API"
-    val advancedSubtitle = "For advanced users who need real-time updates (exchangerate.host)"
-    val apiSignupUrl = "https://exchangerate.host/signup/free"
+    val frankfurterLabel = stringResource(R.string.settings_provider_frankfurter_label)
+    val advancedLabel = stringResource(R.string.settings_provider_advanced_label)
+    val advancedSubtitle = stringResource(R.string.settings_provider_advanced_subtitle)
+    val apiSignupUrl = stringResource(R.string.settings_api_signup_url)
     val selectedProviderLabel = selectedProvider?.let { provider ->
         when (provider.id) {
             Constants.PROVIDER_FRANKFURTER -> frankfurterLabel
@@ -130,7 +132,7 @@ fun SettingsScreen(
         containerColor = Color.Transparent,
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.action_settings)) },
                 navigationIcon = {
                     TextButton(
                         onClick = { navController.popBackStack() },
@@ -139,7 +141,7 @@ fun SettingsScreen(
                             contentColor = MaterialTheme.colorScheme.primary
                         )
                     ) {
-                        Text("Back")
+                        Text(stringResource(R.string.action_back))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -173,22 +175,28 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Help & Support", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Learn how PocketCurrency works and troubleshoot common issues.",
+                            stringResource(R.string.settings_help_support_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            stringResource(R.string.settings_help_support_subtitle),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     Text(
-                        "Open",
+                        stringResource(R.string.settings_open),
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
             }
 
-            Text("Currency defaults", style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.settings_currency_defaults_title),
+                style = MaterialTheme.typography.titleLarge
+            )
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
@@ -198,9 +206,12 @@ fun SettingsScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Home & destination", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Home currency is used for the default \"To\" value. Destination currency is the default \"From\" value.",
+                        stringResource(R.string.settings_home_destination_title),
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        stringResource(R.string.settings_home_destination_description),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -212,8 +223,8 @@ fun SettingsScreen(
                                 viewModel.setHomeCurrency(homeInput.value)
                             }
                         },
-                        label = { Text("Home currency") },
-                        placeholder = { Text("e.g. USD") },
+                        label = { Text(stringResource(R.string.settings_home_currency_label)) },
+                        placeholder = { Text(stringResource(R.string.settings_home_currency_placeholder)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .onFocusChanged { state ->
@@ -229,9 +240,12 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("Auto-detect destination", style = MaterialTheme.typography.titleSmall)
                             Text(
-                                "Uses your current country when enabled.",
+                                stringResource(R.string.settings_auto_destination_title),
+                                style = MaterialTheme.typography.titleSmall
+                            )
+                            Text(
+                                stringResource(R.string.settings_auto_destination_description),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -249,8 +263,8 @@ fun SettingsScreen(
                                 viewModel.setDestinationCurrency(destinationInput.value)
                             }
                         },
-                        label = { Text("Destination currency") },
-                        placeholder = { Text("e.g. EUR") },
+                        label = { Text(stringResource(R.string.settings_destination_currency_label)) },
+                        placeholder = { Text(stringResource(R.string.settings_destination_currency_placeholder)) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .onFocusChanged { state ->
@@ -264,7 +278,10 @@ fun SettingsScreen(
                 }
             }
 
-            Text("Rate service", style = MaterialTheme.typography.titleLarge)
+            Text(
+                stringResource(R.string.settings_rate_service_title),
+                style = MaterialTheme.typography.titleLarge
+            )
 
             var expanded by remember { mutableStateOf(false) }
 
@@ -277,7 +294,7 @@ fun SettingsScreen(
                         value = selectedProviderLabel,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Provider") },
+                        label = { Text(stringResource(R.string.settings_provider_label)) },
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                         },
@@ -321,9 +338,9 @@ fun SettingsScreen(
                 }
                 // Friendly provider summary keeps choices simple for travellers.
                 val providerDescription = if (uiState.service == Constants.PROVIDER_EXCHANGE_RATES) {
-                    "For advanced users who need real-time updates"
+                    stringResource(R.string.settings_provider_description_advanced)
                 } else {
-                    "Daily rates · No setup · Works offline"
+                    stringResource(R.string.settings_provider_description_default)
                 }
                 Text(
                     providerDescription,
@@ -335,7 +352,7 @@ fun SettingsScreen(
             // Advanced options stay tucked away unless explicitly chosen.
             if (uiState.service == Constants.PROVIDER_EXCHANGE_RATES) {
                 Text(
-                    "Advanced",
+                    stringResource(R.string.settings_advanced_title),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -351,13 +368,13 @@ fun SettingsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            "API access",
+                            stringResource(R.string.settings_api_access_title),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (!uiState.hasSavedApiKey) {
                             Text(
-                                "No API key saved. Create a free key here:",
+                                stringResource(R.string.settings_no_api_key_saved),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -371,7 +388,7 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = uiState.apiKeyInput,
                             onValueChange = viewModel::onApiKeyChanged,
-                            label = { Text("API key") },
+                            label = { Text(stringResource(R.string.settings_api_key_label)) },
                             visualTransformation = PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -381,7 +398,11 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                if (uiState.isApiKeyVerified) "Key verified" else "Key not verified",
+                                if (uiState.isApiKeyVerified) {
+                                    stringResource(R.string.settings_api_key_verified)
+                                } else {
+                                    stringResource(R.string.settings_api_key_not_verified)
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -390,7 +411,13 @@ fun SettingsScreen(
                                 enabled = !uiState.isVerifying,
                                 modifier = Modifier.heightIn(min = 48.dp)
                             ) {
-                                Text(if (uiState.isVerifying) "Verifying..." else "Verify & Save")
+                                Text(
+                                    if (uiState.isVerifying) {
+                                        stringResource(R.string.settings_api_key_verifying)
+                                    } else {
+                                        stringResource(R.string.settings_api_key_verify_button)
+                                    }
+                                )
                             }
                         }
                         uiState.apiKeyStatus?.let { message ->
@@ -415,7 +442,7 @@ fun SettingsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            "Plan & usage",
+                            stringResource(R.string.settings_plan_usage_title),
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -425,9 +452,18 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text("Free plan (100 requests/month)")
                                 Text(
-                                    if (uiState.isFreePlan) "Alerts enabled" else "Alerts disabled",
+                                    stringResource(
+                                        R.string.settings_free_plan_label,
+                                        Constants.FREE_PLAN_LIMIT.toString()
+                                    )
+                                )
+                                Text(
+                                    if (uiState.isFreePlan) {
+                                        stringResource(R.string.settings_alerts_enabled)
+                                    } else {
+                                        stringResource(R.string.settings_alerts_disabled)
+                                    },
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -445,7 +481,12 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         Text(
-                            "Usage ${uiState.usageCount}/${Constants.FREE_PLAN_LIMIT} • ${uiState.usageMonth}",
+                            stringResource(
+                                R.string.settings_usage_format,
+                                uiState.usageCount.toString(),
+                                Constants.FREE_PLAN_LIMIT.toString(),
+                                uiState.usageMonth
+                            ),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -458,7 +499,10 @@ fun SettingsScreen(
                                     modifier = Modifier.padding(12.dp),
                                     verticalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Text("Usage alert", style = MaterialTheme.typography.titleMedium)
+                                    Text(
+                                        stringResource(R.string.settings_usage_alert_title),
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
                                     Text(
                                         warning,
                                         style = MaterialTheme.typography.bodyMedium,
@@ -468,7 +512,7 @@ fun SettingsScreen(
                                         onClick = viewModel::clearUsageWarning,
                                         modifier = Modifier.heightIn(min = 48.dp)
                                     ) {
-                                        Text("Dismiss")
+                                        Text(stringResource(R.string.settings_dismiss))
                                     }
                                 }
                             }
@@ -490,9 +534,12 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Scan prices with camera", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Disable scanning and use manual entry only.",
+                            stringResource(R.string.settings_scan_camera_title),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                        Text(
+                            stringResource(R.string.settings_scan_camera_subtitle),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -509,13 +556,22 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Saved for offline use", style = MaterialTheme.typography.titleLarge)
+                Text(
+                    stringResource(R.string.settings_saved_offline_title),
+                    style = MaterialTheme.typography.titleLarge
+                )
                 TextButton(
                     onClick = viewModel::refreshSavedRates,
                     enabled = uiState.savedRates.isNotEmpty() && !uiState.isRefreshingSavedRates,
                     modifier = Modifier.heightIn(min = 48.dp)
                 ) {
-                    Text(if (uiState.isRefreshingSavedRates) "Refreshing..." else "Refresh all")
+                    Text(
+                        if (uiState.isRefreshingSavedRates) {
+                            stringResource(R.string.settings_refreshing)
+                        } else {
+                            stringResource(R.string.settings_refresh_all)
+                        }
+                    )
                 }
             }
             Card(
@@ -527,7 +583,10 @@ fun SettingsScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("Add or refresh a pair", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        stringResource(R.string.settings_saved_pair_title),
+                        style = MaterialTheme.typography.titleMedium
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -535,13 +594,13 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = savedFrom.value,
                             onValueChange = { savedFrom.value = it.uppercase() },
-                            label = { Text("From") },
+                            label = { Text(stringResource(R.string.main_currency_from_label)) },
                             modifier = Modifier.weight(1f)
                         )
                         OutlinedTextField(
                             value = savedTo.value,
                             onValueChange = { savedTo.value = it.uppercase() },
-                            label = { Text("To") },
+                            label = { Text(stringResource(R.string.main_currency_to_label)) },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -560,7 +619,13 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .heightIn(min = 48.dp)
                     ) {
-                        Text(if (editingSaved.value == null) "Fetch & Save" else "Update pair")
+                        Text(
+                            if (editingSaved.value == null) {
+                                stringResource(R.string.settings_fetch_save)
+                            } else {
+                                stringResource(R.string.settings_update_pair)
+                            }
+                        )
                     }
                 }
             }
@@ -580,7 +645,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                 ) {
                     Text(
-                        "No saved offline pairs yet.",
+                        stringResource(R.string.settings_no_saved_pairs),
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -589,16 +654,24 @@ fun SettingsScreen(
             } else {
                 sortedSavedRates.forEach { rate ->
                     RateRow(
-                        title = "${rate.from} → ${rate.to}",
-                        subtitle = "Rate ${rate.rate} • ${formatTimestamp(rate.lastUpdatedMillis)}",
+                        title = stringResource(
+                            R.string.settings_rate_row_title,
+                            rate.from,
+                            rate.to
+                        ),
+                        subtitle = stringResource(
+                            R.string.settings_rate_row_subtitle,
+                            rate.rate,
+                            formatTimestamp(rate.lastUpdatedMillis)
+                        ),
                         onPrimary = {
                             savedFrom.value = rate.from
                             savedTo.value = rate.to
                             editingSaved.value = rate
                         },
-                        primaryLabel = "Edit",
+                        primaryLabel = stringResource(R.string.settings_rate_row_edit),
                         onSecondary = { viewModel.removeSavedRate(rate.from, rate.to) },
-                        secondaryLabel = "Remove"
+                        secondaryLabel = stringResource(R.string.settings_rate_row_remove)
                     )
                 }
             }
@@ -606,9 +679,12 @@ fun SettingsScreen(
             val manualFromNeedsHelp = shouldShowCurrencyCodeHelp(manualFrom.value)
             val manualToNeedsHelp = shouldShowCurrencyCodeHelp(manualTo.value)
 
-            Text("Offline rates", style = MaterialTheme.typography.titleLarge)
             Text(
-                "Offline rates are ideal when travelling without internet access.",
+                stringResource(R.string.settings_offline_rates_title),
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                stringResource(R.string.settings_offline_rates_description),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -622,7 +698,11 @@ fun SettingsScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text(
-                        if (editingManual.value == null) "Add offline rate" else "Edit offline rate",
+                        if (editingManual.value == null) {
+                            stringResource(R.string.settings_add_offline_rate)
+                        } else {
+                            stringResource(R.string.settings_edit_offline_rate)
+                        },
                         style = MaterialTheme.typography.titleMedium
                     )
                     Row(
@@ -632,22 +712,22 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = manualFrom.value,
                             onValueChange = { manualFrom.value = it.uppercase() },
-                            label = { Text("From") },
+                            label = { Text(stringResource(R.string.main_currency_from_label)) },
                             modifier = Modifier.weight(1f),
                             supportingText = {
                                 if (manualFromNeedsHelp) {
-                                    Text("Use a 3-letter currency code (e.g. USD)")
+                                    Text(stringResource(R.string.settings_currency_code_help))
                                 }
                             }
                         )
                         OutlinedTextField(
                             value = manualTo.value,
                             onValueChange = { manualTo.value = it.uppercase() },
-                            label = { Text("To") },
+                            label = { Text(stringResource(R.string.main_currency_to_label)) },
                             modifier = Modifier.weight(1f),
                             supportingText = {
                                 if (manualToNeedsHelp) {
-                                    Text("Use a 3-letter currency code (e.g. USD)")
+                                    Text(stringResource(R.string.settings_currency_code_help))
                                 }
                             }
                         )
@@ -655,7 +735,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = manualRate.value,
                         onValueChange = { manualRate.value = it },
-                        label = { Text("Rate") },
+                        label = { Text(stringResource(R.string.settings_rate_label)) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Button(
@@ -677,7 +757,13 @@ fun SettingsScreen(
                             .fillMaxWidth()
                             .heightIn(min = 48.dp)
                     ) {
-                        Text(if (editingManual.value == null) "Save rate" else "Update rate")
+                        Text(
+                            if (editingManual.value == null) {
+                                stringResource(R.string.settings_save_rate)
+                            } else {
+                                stringResource(R.string.settings_update_rate)
+                            }
+                        )
                     }
                 }
             }
@@ -689,7 +775,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                 ) {
                     Text(
-                        "No offline rates yet.",
+                        stringResource(R.string.settings_no_offline_rates),
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -698,17 +784,25 @@ fun SettingsScreen(
             } else {
                 sortedManualRates.forEach { rate ->
                     RateRow(
-                        title = "${rate.from} → ${rate.to}",
-                        subtitle = "Rate ${rate.rate} • ${formatTimestamp(rate.lastUpdatedMillis)}",
+                        title = stringResource(
+                            R.string.settings_rate_row_title,
+                            rate.from,
+                            rate.to
+                        ),
+                        subtitle = stringResource(
+                            R.string.settings_rate_row_subtitle,
+                            rate.rate,
+                            formatTimestamp(rate.lastUpdatedMillis)
+                        ),
                         onPrimary = {
                             manualFrom.value = rate.from
                             manualTo.value = rate.to
                             manualRate.value = rate.rate.toString()
                             editingManual.value = rate
                         },
-                        primaryLabel = "Edit",
+                        primaryLabel = stringResource(R.string.settings_rate_row_edit),
                         onSecondary = { viewModel.removeManualRate(rate.from, rate.to) },
-                        secondaryLabel = "Remove"
+                        secondaryLabel = stringResource(R.string.settings_rate_row_remove)
                     )
                 }
             }
