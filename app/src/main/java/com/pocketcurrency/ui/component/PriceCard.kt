@@ -14,8 +14,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
+import com.pocketcurrency.R
 import com.pocketcurrency.domain.model.ConversionResult
 import com.pocketcurrency.domain.model.RateSource
 import android.text.format.DateUtils
@@ -32,16 +34,21 @@ fun PriceCard(modifier: Modifier = Modifier, result: ConversionResult) {
     )
 
     val sourceLabel = when (result.rate.source) {
-        RateSource.LIVE -> "Live"
-        RateSource.SAVED -> "Saved"
-        RateSource.MANUAL -> "Offline"
+        RateSource.LIVE -> stringResource(R.string.pricecard_source_live)
+        RateSource.SAVED -> stringResource(R.string.pricecard_source_saved)
+        RateSource.MANUAL -> stringResource(R.string.pricecard_source_offline)
     }
-    val timeLabel = "Updated"
+    val timeLabel = stringResource(R.string.pricecard_updated_label)
 
     val formattedFrom = formatDisplayAmount(result.from.amount)
     val formattedTo = formatDisplayAmount(result.convertedAmount)
     val formattedRate = formatDisplayAmount(result.rate.rate)
-    val readableAmount = formatLargeAmount(result.convertedAmount)
+    val readableAmount = formatLargeAmount(
+        result.convertedAmount,
+        trillionLabel = stringResource(R.string.unit_trillion),
+        billionLabel = stringResource(R.string.unit_billion),
+        millionLabel = stringResource(R.string.unit_million)
+    )
     val reassuranceColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f)
 
     Card(
@@ -56,7 +63,7 @@ fun PriceCard(modifier: Modifier = Modifier, result: ConversionResult) {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text(
-                text = "Converted amount",
+                text = stringResource(R.string.pricecard_converted_amount_label),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -67,18 +74,34 @@ fun PriceCard(modifier: Modifier = Modifier, result: ConversionResult) {
             )
             if (readableAmount != null) {
                 Text(
-                    text = "≈ $readableAmount ${result.toCurrency} ($formattedTo)",
+                    text = stringResource(
+                        R.string.pricecard_approx_format,
+                        readableAmount,
+                        result.toCurrency,
+                        formattedTo
+                    ),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                InfoPill("From $formattedFrom ${result.from.currency}")
-                InfoPill("Rate $formattedRate")
+                InfoPill(
+                    stringResource(
+                        R.string.pricecard_info_from_format,
+                        formattedFrom,
+                        result.from.currency
+                    )
+                )
+                InfoPill(stringResource(R.string.pricecard_info_rate_format, formattedRate))
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))
             Text(
-                text = "$sourceLabel · $timeLabel $relativeUpdated",
+                text = stringResource(
+                    R.string.pricecard_status_format,
+                    sourceLabel,
+                    timeLabel,
+                    relativeUpdated
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = reassuranceColor
             )
@@ -95,12 +118,17 @@ internal fun formatDisplayAmount(value: Double): String {
     return formatter.format(value)
 }
 
-private fun formatLargeAmount(value: Double): String? {
+private fun formatLargeAmount(
+    value: Double,
+    trillionLabel: String,
+    billionLabel: String,
+    millionLabel: String
+): String? {
     val absValue = abs(value)
     val (scaled, unit) = when {
-        absValue >= 1_000_000_000_000 -> absValue / 1_000_000_000_000 to "trillion"
-        absValue >= 1_000_000_000 -> absValue / 1_000_000_000 to "billion"
-        absValue >= 1_000_000 -> absValue / 1_000_000 to "million"
+        absValue >= 1_000_000_000_000 -> absValue / 1_000_000_000_000 to trillionLabel
+        absValue >= 1_000_000_000 -> absValue / 1_000_000_000 to billionLabel
+        absValue >= 1_000_000 -> absValue / 1_000_000 to millionLabel
         else -> return null
     }
 
