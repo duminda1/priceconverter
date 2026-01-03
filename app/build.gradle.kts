@@ -4,10 +4,12 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.hilt.android)
 
     alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.appdistribution)
 
+    id("kotlin-kapt")
     id("jacoco")
 }
 
@@ -160,4 +162,8 @@ dependencies {
 
     // Material icons for dropdown indicators
     implementation("androidx.compose.material:material-icons-extended")
+
+    // Hilt
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
 }

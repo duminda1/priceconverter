@@ -15,7 +15,9 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import com.pocketcurrency.ui.PocketCurrencyNavGraph
 import com.pocketcurrency.ui.theme.PocketCurrencyTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val requestPermissionLauncher =
