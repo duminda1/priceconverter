@@ -11,7 +11,7 @@ Designed for non-technical users, PocketCurrency works anywhere in the world, su
 
 ---
 
-## ✨ Features
+## Features
 
 - Quick currency conversion
 - Automatic price updates (optional)
@@ -22,7 +22,7 @@ Designed for non-technical users, PocketCurrency works anywhere in the world, su
 
 ---
 
-## 🛠 Technical Setup Guide
+## Technical Setup Guide
 
 ### Requirements
 
@@ -81,7 +81,7 @@ To enable automatic price updates:
 
 ---
 
-## 📱 How to Use PocketCurrency
+## How to Use PocketCurrency
 
 ### Convert a Price
 
@@ -111,7 +111,7 @@ PocketCurrency is designed for travel and works without internet access:
 
 ---
 
-## ❓ Help & Support
+## Help & Support
 
 ### Live vs Saved vs Manual Rates
 
@@ -144,7 +144,7 @@ If the service is unavailable or the key is invalid, PocketCurrency continues us
 
 ---
 
-## ♿ Accessibility
+## Accessibility
 
 PocketCurrency is built with accessibility in mind:
 
@@ -155,7 +155,7 @@ PocketCurrency is built with accessibility in mind:
 
 ---
 
-## 🔐 Privacy & Security
+## Privacy & Security
 
 - No API keys are stored in source code
 - No personal user data is collected
