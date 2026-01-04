@@ -1,31 +1,16 @@
 package com.pocketcurrency.data.repository
 
-import android.content.Context
 import android.content.SharedPreferences
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.utils.Constants
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 class SettingsRepository @Inject constructor(
-    @ApplicationContext context: Context
+    private val prefs: SharedPreferences,
+    private val userSettings: UserSettingsRepository,
+    private val usageRepository: ApiUsageRepository,
+    private val rateStorageRepository: RateStorageRepository
 ) {
-
-    private val prefs: SharedPreferences by lazy {
-        SecurePrefsProvider.create(context)
-    }
-
-    private val userSettings: UserSettingsRepository by lazy {
-        UserSettingsRepository(prefs)
-    }
-
-    private val usageRepository: ApiUsageRepository by lazy {
-        ApiUsageRepository(prefs)
-    }
-
-    private val rateStorageRepository: RateStorageRepository by lazy {
-        RateStorageRepository(prefs)
-    }
 
     fun getService(): String = userSettings.getService()
 
