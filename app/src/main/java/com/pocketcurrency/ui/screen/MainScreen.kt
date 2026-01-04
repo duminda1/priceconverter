@@ -49,7 +49,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
 import com.pocketcurrency.ocr.PriceExtractor
-import com.pocketcurrency.ocr.TextRecognizerHelper
+import com.pocketcurrency.ocr.TextRecognizerSession
 import com.pocketcurrency.R
 import com.pocketcurrency.ui.component.PriceCard
 import com.pocketcurrency.ui.Screen
@@ -134,6 +134,14 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
     var imageAnalysis by remember { mutableStateOf<ImageAnalysis?>(null) }
     var cameraExecutor by remember { mutableStateOf<ExecutorService?>(null) }
+    val textRecognizerSession = remember { TextRecognizerSession() }
+    val activeTextRecognizer = remember(shouldStartCamera, lifecycleOwner, previewView) {
+        if (shouldStartCamera) {
+            textRecognizerSession.acquire()
+        } else {
+            null
+        }
+    }
 
     val requestCameraPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -149,12 +157,10 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
 
     DisposableEffect(shouldStartCamera, lifecycleOwner, previewView) {
         var disposed = false
-        var textRecognizer: TextRecognizerHelper? = null
 
         if (shouldStartCamera) {
             val executor = Executors.newSingleThreadExecutor()
             val priceExtractor = PriceExtractor()
-            textRecognizer = TextRecognizerHelper()
             cameraExecutor = executor
 
             cameraProviderFuture.addListener({
@@ -174,7 +180,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                     .build()
                 imageAnalysis = analysis
 
-                val activeRecognizer = textRecognizer ?: return@addListener
+                val activeRecognizer = activeTextRecognizer ?: return@addListener
 
                 analysis.setAnalyzer(
                     executor,
@@ -242,8 +248,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
             imageAnalysis = null
             cameraExecutor?.shutdown()
             cameraExecutor = null
-            textRecognizer?.close()
-            textRecognizer = null
+            textRecognizerSession.close()
             cameraProviderFuture.addListener({
                 cameraProviderFuture.get().unbindAll()
             }, mainExecutor)
