@@ -48,6 +48,7 @@ import androidx.navigation.NavHostController
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
+import com.pocketcurrency.ocr.OcrThrottle
 import com.pocketcurrency.ocr.PriceExtractor
 import com.pocketcurrency.ocr.TextRecognizerSession
 import com.pocketcurrency.R
@@ -64,6 +65,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 private const val TAG = "MainScreen"
+private const val OCR_THROTTLE_MS = 400L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -142,6 +144,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
             null
         }
     }
+    val ocrThrottle = remember(shouldStartCamera) { OcrThrottle(OCR_THROTTLE_MS) }
 
     val requestCameraPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -198,10 +201,20 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 imageProxy.close()
                                 return
                             }
-                            val inputImage = InputImage.fromMediaImage(
-                                mediaImage,
-                                imageProxy.imageInfo.rotationDegrees
-                            )
+                            if (!ocrThrottle.tryStart()) {
+                                imageProxy.close()
+                                return
+                            }
+                            val inputImage = try {
+                                InputImage.fromMediaImage(
+                                    mediaImage,
+                                    imageProxy.imageInfo.rotationDegrees
+                                )
+                            } catch (e: Exception) {
+                                ocrThrottle.onAbort()
+                                imageProxy.close()
+                                return
+                            }
                             scope.launch(Dispatchers.Default) {
                                 try {
                                     val text = activeRecognizer.recognizeText(inputImage)
@@ -216,6 +229,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 } catch (e: Exception) {
                                     Log.e(TAG, "Failed to recognize live scan text", e)
                                 } finally {
+                                    ocrThrottle.onComplete()
                                     imageProxy.close()
                                 }
                             }
