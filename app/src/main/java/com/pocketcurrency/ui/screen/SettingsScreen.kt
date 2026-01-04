@@ -76,6 +76,9 @@ fun SettingsScreen(
     val manualFrom = remember { mutableStateOf("") }
     val manualTo = remember { mutableStateOf("") }
     val manualRate = remember { mutableStateOf("") }
+    val manualFromError = remember { mutableStateOf<String?>(null) }
+    val manualToError = remember { mutableStateOf<String?>(null) }
+    val manualRateError = remember { mutableStateOf<String?>(null) }
     val editingManual = remember { mutableStateOf<CurrencyPairRate?>(null) }
     val homeInput = remember(uiState.homeCurrency) { mutableStateOf(uiState.homeCurrency) }
     val destinationInput = remember(uiState.destinationCurrency, uiState.destinationAuto) {
@@ -678,6 +681,9 @@ fun SettingsScreen(
 
             val manualFromNeedsHelp = shouldShowCurrencyCodeHelp(manualFrom.value)
             val manualToNeedsHelp = shouldShowCurrencyCodeHelp(manualTo.value)
+            val invalidCurrencyMessage = stringResource(R.string.error_invalid_currency_codes)
+            val currencyHelpMessage = stringResource(R.string.settings_currency_code_help)
+            val invalidManualRateMessage = stringResource(R.string.error_invalid_manual_rate)
 
             Text(
                 stringResource(R.string.settings_offline_rates_title),
@@ -711,47 +717,107 @@ fun SettingsScreen(
                     ) {
                         OutlinedTextField(
                             value = manualFrom.value,
-                            onValueChange = { manualFrom.value = it.uppercase() },
+                            onValueChange = {
+                                manualFrom.value = it.uppercase()
+                                if (manualFromError.value != null) {
+                                    manualFromError.value = null
+                                }
+                            },
                             label = { Text(stringResource(R.string.main_currency_from_label)) },
                             modifier = Modifier.weight(1f),
+                            isError = manualFromError.value != null,
                             supportingText = {
-                                if (manualFromNeedsHelp) {
-                                    Text(stringResource(R.string.settings_currency_code_help))
+                                val error = manualFromError.value
+                                when {
+                                    error != null -> Text(error)
+                                    manualFromNeedsHelp -> Text(currencyHelpMessage)
                                 }
                             }
                         )
                         OutlinedTextField(
                             value = manualTo.value,
-                            onValueChange = { manualTo.value = it.uppercase() },
+                            onValueChange = {
+                                manualTo.value = it.uppercase()
+                                if (manualToError.value != null) {
+                                    manualToError.value = null
+                                }
+                            },
                             label = { Text(stringResource(R.string.main_currency_to_label)) },
                             modifier = Modifier.weight(1f),
+                            isError = manualToError.value != null,
                             supportingText = {
-                                if (manualToNeedsHelp) {
-                                    Text(stringResource(R.string.settings_currency_code_help))
+                                val error = manualToError.value
+                                when {
+                                    error != null -> Text(error)
+                                    manualToNeedsHelp -> Text(currencyHelpMessage)
                                 }
                             }
                         )
                     }
                     OutlinedTextField(
                         value = manualRate.value,
-                        onValueChange = { manualRate.value = it },
+                        onValueChange = {
+                            manualRate.value = it
+                            if (manualRateError.value != null) {
+                                manualRateError.value = null
+                            }
+                        },
                         label = { Text(stringResource(R.string.settings_rate_label)) },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = manualRateError.value != null,
+                        supportingText = {
+                            manualRateError.value?.let { Text(it) }
+                        }
                     )
                     Button(
                         onClick = {
-                            val rateValue = manualRate.value.toDoubleOrNull()
-                            if (rateValue != null) {
-                                viewModel.upsertManualRate(
-                                    manualFrom.value,
-                                    manualTo.value,
-                                    rateValue
-                                )
-                                manualFrom.value = ""
-                                manualTo.value = ""
-                                manualRate.value = ""
-                                editingManual.value = null
+                            val normalizedFrom = manualFrom.value.trim().uppercase()
+                            val normalizedTo = manualTo.value.trim().uppercase()
+                            val rateValue = manualRate.value.trim().toDoubleOrNull()
+                            val fromError = when {
+                                normalizedFrom.isBlank() -> invalidCurrencyMessage
+                                shouldShowCurrencyCodeHelp(normalizedFrom) -> currencyHelpMessage
+                                else -> null
                             }
+                            val toError = when {
+                                normalizedTo.isBlank() -> invalidCurrencyMessage
+                                shouldShowCurrencyCodeHelp(normalizedTo) -> currencyHelpMessage
+                                else -> null
+                            }
+                            val rateError = if (rateValue == null || rateValue <= 0.0) {
+                                invalidManualRateMessage
+                            } else {
+                                null
+                            }
+
+                            manualFromError.value = fromError
+                            manualToError.value = toError
+                            manualRateError.value = rateError
+
+                            if (fromError != null || toError != null || rateError != null) {
+                                return@Button
+                            }
+
+                            editingManual.value?.let { original ->
+                                val originalFrom = original.from.trim().uppercase()
+                                val originalTo = original.to.trim().uppercase()
+                                if (originalFrom != normalizedFrom || originalTo != normalizedTo) {
+                                    viewModel.removeManualRate(original.from, original.to)
+                                }
+                            }
+                            val validatedRate = rateValue ?: return@Button
+                            viewModel.upsertManualRate(
+                                normalizedFrom,
+                                normalizedTo,
+                                validatedRate
+                            )
+                            manualFrom.value = ""
+                            manualTo.value = ""
+                            manualRate.value = ""
+                            manualFromError.value = null
+                            manualToError.value = null
+                            manualRateError.value = null
+                            editingManual.value = null
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -799,6 +865,9 @@ fun SettingsScreen(
                             manualTo.value = rate.to
                             manualRate.value = rate.rate.toString()
                             editingManual.value = rate
+                            manualFromError.value = null
+                            manualToError.value = null
+                            manualRateError.value = null
                         },
                         primaryLabel = stringResource(R.string.settings_rate_row_edit),
                         onSecondary = { viewModel.removeManualRate(rate.from, rate.to) },

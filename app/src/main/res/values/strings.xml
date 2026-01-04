@@ -44,6 +44,7 @@
     <string name="main_scan_label">Scan</string>
     <string name="main_realtime_helper">Realtime updates require internet access and a supported rate service.</string>
     <string name="error_invalid_currency_codes">Enter valid currency codes.</string>
+    <string name="error_invalid_manual_rate">Enter a rate greater than 0.</string>
     <string name="error_service_unavailable">Service unavailable. Please try again.</string>
     <string name="error_invalid_api_key">Enter a valid API key.</string>
     <string name="status_api_key_saved">API key verified and saved.</string>
