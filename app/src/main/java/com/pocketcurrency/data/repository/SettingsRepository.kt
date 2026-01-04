@@ -4,8 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.utils.Constants
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 
-class SettingsRepository(context: Context) {
+class SettingsRepository @Inject constructor(
+    @ApplicationContext context: Context
+) {
 
     private val prefs: SharedPreferences by lazy {
         SecurePrefsProvider.create(context)

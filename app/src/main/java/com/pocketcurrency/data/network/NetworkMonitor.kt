@@ -3,8 +3,12 @@ package com.pocketcurrency.data.network
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import dagger.hilt.android.qualifiers.ApplicationContext
+import javax.inject.Inject
 
-class NetworkMonitor(context: Context) {
+class NetworkMonitor @Inject constructor(
+    @ApplicationContext context: Context
+) {
     private val connectivityManager =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 

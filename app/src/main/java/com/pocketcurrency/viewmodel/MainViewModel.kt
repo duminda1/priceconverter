@@ -15,9 +15,11 @@ import com.pocketcurrency.domain.model.ServiceStatus
 import com.pocketcurrency.domain.model.ServiceStatusType
 import com.pocketcurrency.domain.usecase.ConvertCurrencyUseCase
 import com.pocketcurrency.utils.Constants
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 sealed class ConversionState {
     object Idle : ConversionState()
@@ -26,12 +28,13 @@ sealed class ConversionState {
     data class Error(val message: String) : ConversionState()
 }
 
-class MainViewModel(
+@HiltViewModel
+class MainViewModel @Inject constructor(
     application: Application,
     private val rateRepository: RateRepository,
     private val settingsRepository: SettingsRepository,
     private val rateUpdateRepository: RateUpdateRepository,
-    private val strings: StringProvider = ResourceStringProvider(application)
+    private val strings: StringProvider
 ) : AndroidViewModel(application) {
 
     private val convertCurrencyUseCase = ConvertCurrencyUseCase()

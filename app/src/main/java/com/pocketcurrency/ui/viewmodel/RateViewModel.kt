@@ -4,26 +4,18 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.pocketcurrency.data.network.NetworkMonitor
-import com.pocketcurrency.data.provider.RateProviders
-import com.pocketcurrency.data.repository.RateUpdatePolicyRegistry
-import com.pocketcurrency.data.repository.RateUpdateRepository
-import com.pocketcurrency.data.repository.SettingsRepository
 import com.pocketcurrency.domain.usecase.GetRatesUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class RateViewModel(application: Application) : AndroidViewModel(application) {
-
-    private val settingsRepository = SettingsRepository(application)
-    private val repository = RateUpdateRepository(
-        settingsRepository = settingsRepository,
-        providerRegistry = RateProviders.registry,
-        networkMonitor = NetworkMonitor(application),
-        policyRegistry = RateUpdatePolicyRegistry()
-    )
-    private val getRatesUseCase = GetRatesUseCase(repository)
+@HiltViewModel
+class RateViewModel @Inject constructor(
+    application: Application,
+    private val getRatesUseCase: GetRatesUseCase
+) : AndroidViewModel(application) {
 
     private val _rate = MutableStateFlow(0.0)
     val rate: StateFlow<Double> = _rate

@@ -3,6 +3,7 @@ package com.pocketcurrency.data.repository
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.data.model.CurrencyRate
 import com.pocketcurrency.domain.model.RateSource
+import javax.inject.Inject
 
 data class RateResult(
     val rate: CurrencyRate?,
@@ -19,6 +20,15 @@ class RateRepository(
     private val rateUpdateRepository: RateUpdateRepository,
     private val timeProvider: () -> Long = System::currentTimeMillis
 ) {
+    @Inject
+    constructor(
+        settingsRepository: SettingsRepository,
+        rateUpdateRepository: RateUpdateRepository
+    ) : this(
+        settingsRepository = settingsRepository,
+        rateUpdateRepository = rateUpdateRepository,
+        timeProvider = System::currentTimeMillis
+    )
 
     fun getSavedRates(): List<CurrencyPairRate> = settingsRepository.getSavedRates()
 
