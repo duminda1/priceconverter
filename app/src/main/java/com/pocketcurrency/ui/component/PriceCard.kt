@@ -28,7 +28,7 @@ import kotlin.math.abs
 fun PriceCard(modifier: Modifier = Modifier, result: ConversionResult) {
 
     val relativeUpdated = DateUtils.getRelativeTimeSpanString(
-        result.rate.lastUpdatedMillis,
+        result.rate.lastUpdatedAtMillis,
         System.currentTimeMillis(),
         DateUtils.MINUTE_IN_MILLIS
     )

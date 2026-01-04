@@ -27,4 +27,5 @@ object Constants {
     const val PREFS_HOME_CURRENCY = "home_currency"
     const val PREFS_DESTINATION_CURRENCY = "destination_currency"
     const val PREFS_DESTINATION_AUTO = "destination_currency_auto"
+    const val PREFS_RATE_REFRESH_CHECK_PREFIX = "rate_refresh_check_"
 }

@@ -8,6 +8,7 @@ import com.pocketcurrency.data.provider.RateProviderClient
 import com.pocketcurrency.data.provider.RateProviderRegistry
 import com.pocketcurrency.domain.model.RateProvider
 import com.pocketcurrency.domain.model.RateSource
+import com.pocketcurrency.utils.FrankfurterSchedule
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -99,6 +100,84 @@ class RateUpdateRepositoryTest {
             result.errorMessage
         )
         assertFalse(provider.fetchCalled)
+    }
+
+    @Test
+    fun refreshSavedRatesIfStale_skipsWhenAlreadyChecked() = runBlocking {
+        val settingsRepository = mockk<SettingsRepository>(relaxed = true)
+        val networkMonitor = mockk<NetworkMonitor>()
+        every { networkMonitor.isOnline() } returns true
+        every { settingsRepository.getService() } returns RateProvider.FRANKFURTER.id
+
+        val nowMillis = 1_720_000_000_000L
+        val lastScheduled = FrankfurterSchedule.lastScheduledUpdateMillis(nowMillis)
+        every { settingsRepository.getLastRateRefreshCheck(RateProvider.FRANKFURTER.id) } returns
+            lastScheduled
+
+        val provider = RecordingProvider(RateProvider.FRANKFURTER)
+        val repository = RateUpdateRepository(
+            settingsRepository = settingsRepository,
+            providerRegistry = RateProviderRegistry(listOf(provider)),
+            networkMonitor = networkMonitor,
+            policyRegistry = RateUpdatePolicyRegistry()
+        )
+
+        repository.refreshSavedRatesIfStale(nowMillis)
+
+        assertFalse(provider.fetchCalled)
+        verify(exactly = 0) {
+            settingsRepository.setLastRateRefreshCheck(any(), any())
+        }
+    }
+
+    @Test
+    fun refreshSavedRatesIfStale_updatesCheckAndRefreshesStaleRates() = runBlocking {
+        val settingsRepository = mockk<SettingsRepository>(relaxed = true)
+        val networkMonitor = mockk<NetworkMonitor>()
+        every { networkMonitor.isOnline() } returns true
+        every { settingsRepository.getService() } returns RateProvider.FRANKFURTER.id
+
+        val nowMillis = 1_720_000_000_000L
+        val lastScheduled = FrankfurterSchedule.lastScheduledUpdateMillis(nowMillis)
+        every { settingsRepository.getLastRateRefreshCheck(RateProvider.FRANKFURTER.id) } returns
+            lastScheduled - 1
+        every { settingsRepository.getSavedRates() } returns listOf(
+            CurrencyPairRate("USD", "AUD", 1.2, lastScheduled - 1_000)
+        )
+
+        val provider = FakeProvider(
+            config = RateProvider.FRANKFURTER,
+            fetchResult = ApiRateResult(
+                rate = CurrencyRate(1.25, lastScheduled, RateSource.LIVE),
+                warningMessage = null,
+                errorMessage = null
+            )
+        )
+        val repository = RateUpdateRepository(
+            settingsRepository = settingsRepository,
+            providerRegistry = RateProviderRegistry(listOf(provider)),
+            networkMonitor = networkMonitor,
+            policyRegistry = RateUpdatePolicyRegistry()
+        )
+
+        repository.refreshSavedRatesIfStale(nowMillis)
+
+        verify {
+            settingsRepository.setLastRateRefreshCheck(
+                RateProvider.FRANKFURTER.id,
+                nowMillis
+            )
+        }
+        verify {
+            settingsRepository.upsertSavedRate(
+                CurrencyPairRate(
+                    from = "USD",
+                    to = "AUD",
+                    rate = 1.25,
+                    lastUpdatedMillis = lastScheduled
+                )
+            )
+        }
     }
 
     private class FakeProvider(

@@ -5,4 +5,7 @@ data class CurrencyPairRate(
     val to: String,
     val rate: Double,
     val lastUpdatedMillis: Long
-)
+) {
+    val lastUpdatedAtMillis: Long
+        get() = lastUpdatedMillis
+}
