@@ -771,44 +771,37 @@ fun SettingsScreen(
                     )
                     Button(
                         onClick = {
-                            val normalizedFrom = manualFrom.value.trim().uppercase()
-                            val normalizedTo = manualTo.value.trim().uppercase()
-                            val rateValue = manualRate.value.trim().toDoubleOrNull()
-                            val fromError = when {
-                                normalizedFrom.isBlank() -> invalidCurrencyMessage
-                                shouldShowCurrencyCodeHelp(normalizedFrom) -> currencyHelpMessage
-                                else -> null
-                            }
-                            val toError = when {
-                                normalizedTo.isBlank() -> invalidCurrencyMessage
-                                shouldShowCurrencyCodeHelp(normalizedTo) -> currencyHelpMessage
-                                else -> null
-                            }
-                            val rateError = if (rateValue == null || rateValue <= 0.0) {
+                            val validation = validateManualRateInput(
+                                manualFrom.value,
+                                manualTo.value,
+                                manualRate.value,
+                                invalidCurrencyMessage,
+                                currencyHelpMessage,
                                 invalidManualRateMessage
-                            } else {
-                                null
-                            }
+                            )
 
-                            manualFromError.value = fromError
-                            manualToError.value = toError
-                            manualRateError.value = rateError
+                            manualFromError.value = validation.fromError
+                            manualToError.value = validation.toError
+                            manualRateError.value = validation.rateError
 
-                            if (fromError != null || toError != null || rateError != null) {
+                            if (!validation.isValid) {
                                 return@Button
                             }
 
                             editingManual.value?.let { original ->
-                                val originalFrom = original.from.trim().uppercase()
-                                val originalTo = original.to.trim().uppercase()
-                                if (originalFrom != normalizedFrom || originalTo != normalizedTo) {
+                                if (shouldRemoveOriginalManualRate(
+                                        original,
+                                        validation.normalizedFrom,
+                                        validation.normalizedTo
+                                    )
+                                ) {
                                     viewModel.removeManualRate(original.from, original.to)
                                 }
                             }
-                            val validatedRate = rateValue ?: return@Button
+                            val validatedRate = validation.rateValue ?: return@Button
                             viewModel.upsertManualRate(
-                                normalizedFrom,
-                                normalizedTo,
+                                validation.normalizedFrom,
+                                validation.normalizedTo,
                                 validatedRate
                             )
                             manualFrom.value = ""
@@ -929,6 +922,66 @@ private fun shouldShowCurrencyCodeHelp(value: String): Boolean {
     if (trimmed.isBlank()) return false
     if (trimmed.length != 3) return true
     return trimmed.any { !it.isLetter() }
+}
+
+internal data class ManualRateValidationResult(
+    val normalizedFrom: String,
+    val normalizedTo: String,
+    val rateValue: Double?,
+    val fromError: String?,
+    val toError: String?,
+    val rateError: String?
+) {
+    val isValid: Boolean
+        get() = fromError == null && toError == null && rateError == null
+}
+
+internal fun validateManualRateInput(
+    from: String,
+    to: String,
+    rateInput: String,
+    invalidCurrencyMessage: String,
+    currencyHelpMessage: String,
+    invalidManualRateMessage: String
+): ManualRateValidationResult {
+    val normalizedFrom = from.trim().uppercase()
+    val normalizedTo = to.trim().uppercase()
+    val rateValue = rateInput.trim().toDoubleOrNull()
+    val fromError = when {
+        normalizedFrom.isBlank() -> invalidCurrencyMessage
+        shouldShowCurrencyCodeHelp(normalizedFrom) -> currencyHelpMessage
+        else -> null
+    }
+    val toError = when {
+        normalizedTo.isBlank() -> invalidCurrencyMessage
+        shouldShowCurrencyCodeHelp(normalizedTo) -> currencyHelpMessage
+        else -> null
+    }
+    val rateError = if (rateValue == null || rateValue <= 0.0) {
+        invalidManualRateMessage
+    } else {
+        null
+    }
+
+    return ManualRateValidationResult(
+        normalizedFrom = normalizedFrom,
+        normalizedTo = normalizedTo,
+        rateValue = rateValue,
+        fromError = fromError,
+        toError = toError,
+        rateError = rateError
+    )
+}
+
+internal fun shouldRemoveOriginalManualRate(
+    original: CurrencyPairRate?,
+    normalizedFrom: String,
+    normalizedTo: String
+): Boolean {
+    if (original == null) return false
+    val originalFrom = original.from.trim().uppercase()
+    val originalTo = original.to.trim().uppercase()
+    return originalFrom != normalizedFrom || originalTo != normalizedTo
 }
 
 private fun formatTimestamp(timestampMillis: Long): String {
