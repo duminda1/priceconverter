@@ -6,8 +6,11 @@ import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.utils.Constants
 import org.json.JSONArray
 import org.json.JSONObject
+import javax.inject.Inject
 
-internal class RateStorageRepository(private val prefs: SharedPreferences) {
+class RateStorageRepository @Inject constructor(
+    private val prefs: SharedPreferences
+) {
     fun getSavedRates(): List<CurrencyPairRate> {
         return decodeRates(prefs.getString(Constants.PREFS_SAVED_RATES, null))
     }

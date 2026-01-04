@@ -5,6 +5,7 @@ import androidx.core.content.edit
 import com.pocketcurrency.utils.Constants
 import java.util.Calendar
 import java.util.Locale
+import javax.inject.Inject
 
 data class ApiUsageState(
     val monthKey: String,
@@ -14,7 +15,9 @@ data class ApiUsageState(
     val warn90: Boolean
 )
 
-internal class ApiUsageRepository(private val prefs: SharedPreferences) {
+class ApiUsageRepository @Inject constructor(
+    private val prefs: SharedPreferences
+) {
     fun getUsageState(): ApiUsageState {
         val currentMonth = currentMonthKey()
         val storedMonth = prefs.getString(Constants.PREFS_USAGE_MONTH, currentMonth) ?: currentMonth

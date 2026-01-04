@@ -5,8 +5,11 @@ import androidx.core.content.edit
 import com.pocketcurrency.utils.Constants
 import java.util.Currency
 import java.util.Locale
+import javax.inject.Inject
 
-internal class UserSettingsRepository(private val prefs: SharedPreferences) {
+class UserSettingsRepository @Inject constructor(
+    private val prefs: SharedPreferences
+) {
     fun getService(): String {
         val stored = prefs.getString(Constants.PREFS_SERVICE, null)
         val normalized = when (stored) {
