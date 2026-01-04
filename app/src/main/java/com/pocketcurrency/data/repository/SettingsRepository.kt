@@ -3,6 +3,7 @@ package com.pocketcurrency.data.repository
 import android.content.Context
 import android.content.SharedPreferences
 import com.pocketcurrency.data.model.CurrencyPairRate
+import com.pocketcurrency.utils.Constants
 
 class SettingsRepository(context: Context) {
 
@@ -101,4 +102,16 @@ class SettingsRepository(context: Context) {
 
     fun findManualRate(from: String, to: String): CurrencyPairRate? =
         rateStorageRepository.findManualRate(from, to)
+
+    fun getLastRateRefreshCheck(providerId: String): Long {
+        return prefs.getLong(rateRefreshCheckKey(providerId), 0L)
+    }
+
+    fun setLastRateRefreshCheck(providerId: String, lastCheckedMillis: Long) {
+        prefs.edit().putLong(rateRefreshCheckKey(providerId), lastCheckedMillis).apply()
+    }
+
+    private fun rateRefreshCheckKey(providerId: String): String {
+        return "${Constants.PREFS_RATE_REFRESH_CHECK_PREFIX}$providerId"
+    }
 }

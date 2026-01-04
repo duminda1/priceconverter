@@ -7,12 +7,17 @@ import com.pocketcurrency.domain.model.RateSource
 data class RateResult(
     val rate: CurrencyRate?,
     val warningMessage: String?,
-    val errorMessage: String?
-)
+    val errorMessage: String?,
+    val isStale: Boolean = false
+) {
+    val lastUpdatedAtMillis: Long?
+        get() = rate?.lastUpdatedAtMillis
+}
 
 class RateRepository(
     private val settingsRepository: SettingsRepository,
-    private val rateUpdateRepository: RateUpdateRepository
+    private val rateUpdateRepository: RateUpdateRepository,
+    private val timeProvider: () -> Long = System::currentTimeMillis
 ) {
 
     fun getSavedRates(): List<CurrencyPairRate> = settingsRepository.getSavedRates()
@@ -24,6 +29,7 @@ class RateRepository(
         toCurrency: String,
         realtimeEnabled: Boolean
     ): RateResult {
+        val nowMillis = timeProvider()
         val normalizedFrom = fromCurrency.trim().uppercase()
         val normalizedTo = toCurrency.trim().uppercase()
         val savedRate = findSavedRate(normalizedFrom, normalizedTo)
@@ -37,7 +43,12 @@ class RateRepository(
         if (!canUseRealtime) {
             val fallback = savedRate ?: manualRate
             if (fallback != null) {
-                return RateResult(rate = fallback, warningMessage = null, errorMessage = null)
+                return RateResult(
+                    rate = fallback,
+                    warningMessage = null,
+                    errorMessage = null,
+                    isStale = isStale(fallback, nowMillis)
+                )
             }
             val message = when {
                 providerConfig.requiresApiKey && hasApiKey ->
@@ -60,7 +71,8 @@ class RateRepository(
             return RateResult(
                 rate = apiResult.rate,
                 warningMessage = apiResult.warningMessage,
-                errorMessage = null
+                errorMessage = null,
+                isStale = false
             )
         }
 
@@ -69,14 +81,16 @@ class RateRepository(
             return RateResult(
                 rate = fallback,
                 warningMessage = apiResult.warningMessage,
-                errorMessage = null
+                errorMessage = null,
+                isStale = isStale(fallback, nowMillis)
             )
         }
 
         return RateResult(
             rate = null,
             warningMessage = apiResult.warningMessage,
-            errorMessage = apiResult.errorMessage ?: "Service unavailable. Please try again."
+            errorMessage = apiResult.errorMessage ?: "Service unavailable. Please try again.",
+            isStale = false
         )
     }
 
@@ -113,6 +127,13 @@ class RateRepository(
             return toCurrencyRate(reverse, source, invert = true)
         }
         return null
+    }
+
+    private fun isStale(rate: CurrencyRate, nowMillis: Long): Boolean {
+        if (rate.source == RateSource.LIVE) {
+            return false
+        }
+        return rateUpdateRepository.isRateStale(rate.lastUpdatedAtMillis, nowMillis)
     }
 
     private fun toCurrencyRate(

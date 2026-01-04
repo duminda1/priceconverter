@@ -111,4 +111,24 @@ class RateRepositoryTest {
         assertEquals(RateSource.SAVED, result.rate!!.source)
         assertEquals(2.0, result.rate!!.rate, 0.0001)
     }
+
+    @Test
+    fun getRate_realtimeDisabled_marksStaleSavedRate() = runBlocking {
+        every { rateUpdateRepository.getActiveProviderConfig() } returns RateProvider.FRANKFURTER
+        every { settingsRepository.hasApiKey() } returns false
+        every { settingsRepository.findSavedRate("USD", "AUD") } returns CurrencyPairRate(
+            from = "USD",
+            to = "AUD",
+            rate = 1.5,
+            lastUpdatedMillis = 100L
+        )
+        every { settingsRepository.findManualRate(any(), any()) } returns null
+        every { rateUpdateRepository.isRateStale(100L, 200L) } returns true
+
+        val repository = RateRepository(settingsRepository, rateUpdateRepository) { 200L }
+        val result = repository.getRate("USD", "AUD", realtimeEnabled = false)
+
+        assertNotNull(result.rate)
+        assertEquals(true, result.isStale)
+    }
 }

@@ -2,6 +2,7 @@ package com.pocketcurrency.data.repository
 
 import com.pocketcurrency.utils.Constants
 import com.pocketcurrency.utils.FrankfurterSchedule
+import java.util.concurrent.TimeUnit
 
 interface RateUpdatePolicy {
     fun isStale(lastUpdatedMillis: Long, nowMillis: Long): Boolean
@@ -16,7 +17,12 @@ class FrankfurterUpdatePolicy : RateUpdatePolicy {
 }
 
 class DefaultUpdatePolicy : RateUpdatePolicy {
-    override fun isStale(lastUpdatedMillis: Long, nowMillis: Long): Boolean = false
+    private val maxAgeMillis = TimeUnit.DAYS.toMillis(1)
+
+    override fun isStale(lastUpdatedMillis: Long, nowMillis: Long): Boolean {
+        if (lastUpdatedMillis <= 0L) return true
+        return nowMillis - lastUpdatedMillis >= maxAgeMillis
+    }
 }
 
 class RateUpdatePolicyRegistry {

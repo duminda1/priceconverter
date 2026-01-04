@@ -97,8 +97,6 @@ class MainViewModel(
     private val _usageWarning = MutableStateFlow<String?>(null)
     val usageWarning: StateFlow<String?> = _usageWarning
 
-    private var lastProvider: String? = null
-
     init {
         refreshSettings()
     }
@@ -152,12 +150,9 @@ class MainViewModel(
             .distinct()
             .sorted()
 
-        if (providerConfig.id != lastProvider) {
-            lastProvider = providerConfig.id
-            if (providerConfig.id == Constants.PROVIDER_FRANKFURTER) {
-                viewModelScope.launch {
-                    rateUpdateRepository.refreshSavedRatesIfStale()
-                }
+        if (providerConfig.id == Constants.PROVIDER_FRANKFURTER) {
+            viewModelScope.launch {
+                rateUpdateRepository.refreshSavedRatesIfStale()
             }
         }
     }
@@ -195,14 +190,15 @@ class MainViewModel(
                 if (rate != null) {
                     _currentRate.value = rate.rate
                     _currentRateSource.value = rate.source
-                    _currentRateUpdatedAt.value = rate.lastUpdatedMillis
+                    _currentRateUpdatedAt.value = rate.lastUpdatedAtMillis
                     _serviceStatus.value = ServiceStatus(
                         type = when (rate.source) {
                             RateSource.LIVE -> ServiceStatusType.LIVE
                             RateSource.SAVED -> ServiceStatusType.SAVED
                             RateSource.MANUAL -> ServiceStatusType.MANUAL
                         },
-                        lastUpdatedMillis = rate.lastUpdatedMillis
+                        lastUpdatedMillis = rate.lastUpdatedAtMillis,
+                        isStale = rateResult.isStale
                     )
                     val result = convertCurrencyUseCase.execute(
                         price = price,

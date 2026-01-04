@@ -5,12 +5,14 @@ import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.data.network.NetworkMonitor
 import com.pocketcurrency.data.provider.RateProviderRegistry
 import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.utils.FrankfurterSchedule
 
 class RateUpdateRepository(
     private val settingsRepository: SettingsRepository,
     private val providerRegistry: RateProviderRegistry,
     private val networkMonitor: NetworkMonitor,
-    private val policyRegistry: RateUpdatePolicyRegistry
+    private val policyRegistry: RateUpdatePolicyRegistry,
+    private val timeProvider: () -> Long = System::currentTimeMillis
 ) {
     fun getActiveProviderConfig() =
         providerRegistry.getProvider(settingsRepository.getService()).config
@@ -73,6 +75,15 @@ class RateUpdateRepository(
         return updated
     }
 
+    fun isRateStale(lastUpdatedMillis: Long): Boolean {
+        return isRateStale(lastUpdatedMillis, timeProvider())
+    }
+
+    fun isRateStale(lastUpdatedMillis: Long, nowMillis: Long): Boolean {
+        val policy = policyRegistry.getPolicy(getActiveProviderConfig().id)
+        return policy.isStale(lastUpdatedMillis, nowMillis)
+    }
+
     suspend fun verifyApiKey(apiKey: String): ApiRateResult {
         if (!networkMonitor.isOnline()) {
             return ApiRateResult(
@@ -105,6 +116,10 @@ class RateUpdateRepository(
     }
 
     suspend fun refreshSavedRatesIfStale() {
+        refreshSavedRatesIfStale(timeProvider())
+    }
+
+    suspend fun refreshSavedRatesIfStale(nowMillis: Long) {
         val provider = providerRegistry.getProvider(settingsRepository.getService())
         if (provider.config.id != Constants.PROVIDER_FRANKFURTER) {
             return
@@ -114,9 +129,20 @@ class RateUpdateRepository(
         }
 
         val policy = policyRegistry.getPolicy(provider.config.id)
-        val now = System.currentTimeMillis()
-        val staleRates = settingsRepository.getSavedRates().filter {
-            policy.isStale(it.lastUpdatedMillis, now)
+        val lastScheduledUpdate = FrankfurterSchedule.lastScheduledUpdateMillis(nowMillis)
+        val lastChecked = settingsRepository.getLastRateRefreshCheck(provider.config.id)
+        if (lastChecked >= lastScheduledUpdate) {
+            return
+        }
+
+        settingsRepository.setLastRateRefreshCheck(provider.config.id, nowMillis)
+        val savedRates = settingsRepository.getSavedRates()
+        if (savedRates.isEmpty()) {
+            return
+        }
+
+        val staleRates = savedRates.filter {
+            policy.isStale(it.lastUpdatedAtMillis, nowMillis)
         }
         if (staleRates.isEmpty()) {
             return

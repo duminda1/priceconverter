@@ -559,7 +559,8 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                     ) {
                                         serviceStatus?.let { status ->
                                             val statusLabel = serviceStatusLabel(status.type)
-                                            val relativeUpdated = formatRelativeUpdated(status.lastUpdatedMillis)
+                                            val relativeUpdated =
+                                                formatRelativeUpdated(status.lastUpdatedAtMillis)
                                             val labelColor =
                                                 if (status.type == ServiceStatusType.LIVE) {
                                                     MaterialTheme.colorScheme.onSurfaceVariant
@@ -583,6 +584,15 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                                     style = MaterialTheme.typography.bodyMedium,
                                                     color = reassuranceColor
                                                 )
+                                                if (status.isStale) {
+                                                    Text(
+                                                        text = stringResource(
+                                                            R.string.main_status_stale
+                                                        ),
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.error
+                                                    )
+                                                }
                                                 IconButton(
                                                     onClick = { showRateInfo = true },
                                                     modifier = Modifier.size(42.dp)
@@ -610,9 +620,20 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                                     }
                                                 },
                                                 text = {
-                                                    Text(
-                                                        stringResource(R.string.main_rate_info_body)
-                                                    )
+                                                    Column(
+                                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        Text(
+                                                            stringResource(R.string.main_rate_info_body)
+                                                        )
+                                                        if (serviceStatus?.isStale == true) {
+                                                            Text(
+                                                                stringResource(
+                                                                    R.string.main_rate_info_stale
+                                                                )
+                                                            )
+                                                        }
+                                                    }
                                                 }
                                             )
                                         }

@@ -27,6 +27,8 @@
     <string name="main_status_saved">Saved for offline use</string>
     <string name="main_status_manual">Works offline</string>
     <string name="main_status_updated">· Updated %1$s</string>
+    <string name="main_status_stale">· Stale</string>
+    <string name="main_rate_info_stale">Rates look outdated. Refresh saved rates when you are back online.</string>
     <string name="main_rate_info_body">PocketCurrency keeps working even without internet using saved rates.</string>
     <string name="main_realtime_label">Realtime</string>
     <string name="main_scan_label">Scan</string>
