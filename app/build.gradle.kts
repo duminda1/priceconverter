@@ -6,7 +6,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
 
-    alias(libs.plugins.google.services)
     alias(libs.plugins.firebase.appdistribution)
 
     id("kotlin-kapt")
@@ -35,7 +34,8 @@ android {
        }   
 
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -154,8 +154,8 @@ dependencies {
     // --- Retrofit and Gson ---
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
-    // Optional: for logging network requests
-    implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.11")
+    // Optional: for logging network requests in debug builds
+    debugImplementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.11")
 
     // EncryptedSharedPreferences for API keys
     implementation("androidx.security:security-crypto:1.1.0-alpha06")

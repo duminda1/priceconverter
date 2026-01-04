@@ -6,6 +6,5 @@ plugins {
     alias(libs.plugins.hilt.android) apply false
 
     // Firebase plugins (available to modules)
-    alias(libs.plugins.google.services) apply false
     alias(libs.plugins.firebase.appdistribution) apply false
 }
