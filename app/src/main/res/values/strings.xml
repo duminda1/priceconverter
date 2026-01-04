@@ -3,6 +3,10 @@
     <string name="action_settings">Settings</string>
     <string name="action_convert">Convert</string>
     <string name="action_got_it">Got it</string>
+    <string name="action_allow_camera">Allow camera</string>
+    <string name="action_try_again">Try again</string>
+    <string name="action_open_settings">Open settings</string>
+    <string name="action_not_now">Not now</string>
     <string name="content_swap_currencies">Swap currencies</string>
     <string name="content_rate_source_info">Rate source information</string>
     <string name="content_show_options">Show options</string>
@@ -12,6 +16,12 @@
     <string name="main_detected_currency">Detected %1$s</string>
     <string name="main_live_scan_off_title">Live scan is off</string>
     <string name="main_live_scan_off_subtitle">Enable it from the toggle below or in Settings.</string>
+    <string name="main_camera_permission_title">Enable camera access</string>
+    <string name="main_camera_permission_body">We use the camera to scan prices so you can convert faster.</string>
+    <string name="main_camera_permission_denied_title">Camera access denied</string>
+    <string name="main_camera_permission_denied_body">To use live scan, allow camera access.</string>
+    <string name="main_camera_permission_blocked_title">Camera access blocked</string>
+    <string name="main_camera_permission_blocked_body">Enable camera access in Settings to use live scan.</string>
     <string name="main_manual_entry_title">Manual entry</string>
     <string name="main_amount_label">Amount</string>
     <string name="main_amount_placeholder">e.g. 18.50</string>
