@@ -1,5 +1,15 @@
 package com.pocketcurrency.ui.screen
 
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
+import android.text.format.DateUtils
+import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.compose.foundation.background
@@ -31,13 +41,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.outlined.Info
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
-import android.text.format.DateUtils
-import android.util.Log
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
 import com.pocketcurrency.ocr.PriceExtractor
 import com.pocketcurrency.ocr.TextRecognizerHelper
@@ -60,7 +69,18 @@ private const val TAG = "MainScreen"
 @Composable
 fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     val context = LocalContext.current
+    val activity = context as? Activity
     val scope = rememberCoroutineScope()
+    val cameraPermission = Manifest.permission.CAMERA
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                cameraPermission
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    var cameraPermissionUiState by rememberSaveable { mutableStateOf(CameraPermissionUiState.Off) }
 
     val conversionState by viewModel.conversionState.collectAsState()
     val realtimeEnabled by viewModel.realtimeEnabled.collectAsState()
@@ -100,7 +120,8 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     val amountValue = AmountInputFormatter.parseInput(amountInput)
     val convertEnabled =
         amountValue != null && normalizedFrom.isNotBlank() && normalizedTo.isNotBlank()
-    val showCameraHint = liveScanEnabled && scanAmount == null
+    val shouldStartCamera = liveScanEnabled && hasCameraPermission
+    val showCameraHint = shouldStartCamera && scanAmount == null
     val convertLabel = stringResource(R.string.action_convert)
     val fromLabel = stringResource(R.string.main_currency_from_label)
     val toLabel = stringResource(R.string.main_currency_to_label)
@@ -114,10 +135,22 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     var imageAnalysis by remember { mutableStateOf<ImageAnalysis?>(null) }
     var cameraExecutor by remember { mutableStateOf<ExecutorService?>(null) }
 
-    DisposableEffect(liveScanEnabled, lifecycleOwner, previewView) {
+    val requestCameraPermission = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        val shouldShowRationale = activity?.let {
+            ActivityCompat.shouldShowRequestPermissionRationale(it, cameraPermission)
+        }
+        hasCameraPermission = isGranted
+        cameraPermissionUiState =
+            cameraPermissionUiStateForResult(isGranted, shouldShowRationale)
+        viewModel.setLiveScanEnabled(isGranted)
+    }
+
+    DisposableEffect(shouldStartCamera, lifecycleOwner, previewView) {
         var disposed = false
 
-        if (liveScanEnabled) {
+        if (shouldStartCamera) {
             val executor = Executors.newSingleThreadExecutor()
             cameraExecutor = executor
 
@@ -240,6 +273,14 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
                 viewModel.refreshSettings()
+                val granted = ContextCompat.checkSelfPermission(
+                    context,
+                    cameraPermission
+                ) == PackageManager.PERMISSION_GRANTED
+                hasCameraPermission = granted
+                if (granted && cameraPermissionUiState != CameraPermissionUiState.Off) {
+                    cameraPermissionUiState = CameraPermissionUiState.Off
+                }
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -309,6 +350,11 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
             } else {
                 Modifier
             }
+            val permissionCardState = resolveCameraPermissionCardState(
+                hasPermission = hasCameraPermission,
+                liveScanEnabled = liveScanEnabled,
+                uiState = cameraPermissionUiState
+            )
 
             val cameraCard: @Composable (Modifier) -> Unit = { modifier ->
                 Card(
@@ -317,7 +363,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
-                    if (liveScanEnabled) {
+                    if (shouldStartCamera) {
                         Box(
                             modifier = Modifier.fillMaxSize()
                         ) {
@@ -370,6 +416,68 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                 }
                             }
                         }
+                    } else if (permissionCardState.show &&
+                        permissionCardState.state != CameraPermissionUiState.Off
+                    ) {
+                        val promptSpec = when (permissionCardState.state) {
+                            CameraPermissionUiState.Rationale -> {
+                                CameraPermissionPromptSpec(
+                                    title = stringResource(R.string.main_camera_permission_title),
+                                    message = stringResource(R.string.main_camera_permission_body),
+                                    primaryActionLabel = stringResource(R.string.action_allow_camera),
+                                    onPrimaryAction = {
+                                        requestCameraPermission.launch(cameraPermission)
+                                    }
+                                )
+                            }
+                            CameraPermissionUiState.Denied -> {
+                                CameraPermissionPromptSpec(
+                                    title = stringResource(R.string.main_camera_permission_denied_title),
+                                    message = stringResource(R.string.main_camera_permission_denied_body),
+                                    primaryActionLabel = stringResource(R.string.action_try_again),
+                                    onPrimaryAction = {
+                                        requestCameraPermission.launch(cameraPermission)
+                                    }
+                                )
+                            }
+                            CameraPermissionUiState.PermanentlyDenied -> {
+                                CameraPermissionPromptSpec(
+                                    title = stringResource(R.string.main_camera_permission_blocked_title),
+                                    message = stringResource(R.string.main_camera_permission_blocked_body),
+                                    primaryActionLabel = stringResource(R.string.action_open_settings),
+                                    onPrimaryAction = {
+                                        val intent = Intent(
+                                            Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                                        ).apply {
+                                            data = Uri.fromParts("package", context.packageName, null)
+                                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                        }
+                                        context.startActivity(intent)
+                                    }
+                                )
+                            }
+                            CameraPermissionUiState.Off -> {
+                                CameraPermissionPromptSpec(
+                                    title = "",
+                                    message = "",
+                                    primaryActionLabel = "",
+                                    onPrimaryAction = {}
+                                )
+                            }
+                        }
+                        CameraPermissionPrompt(
+                            title = promptSpec.title,
+                            message = promptSpec.message,
+                            primaryActionLabel = promptSpec.primaryActionLabel,
+                            onPrimaryAction = promptSpec.onPrimaryAction,
+                            secondaryActionLabel = stringResource(R.string.action_not_now),
+                            onSecondaryAction = {
+                                cameraPermissionUiState = CameraPermissionUiState.Off
+                                if (liveScanEnabled) {
+                                    viewModel.setLiveScanEnabled(false)
+                                }
+                            }
+                        )
                     } else {
                         Column(
                             modifier = Modifier
@@ -699,7 +807,24 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                         Switch(
                                             modifier = Modifier.scale(0.85f),
                                             checked = liveScanEnabled,
-                                            onCheckedChange = { viewModel.setLiveScanEnabled(it) }
+                                            onCheckedChange = { enabled ->
+                                                if (enabled) {
+                                                    if (hasCameraPermission) {
+                                                        viewModel.setLiveScanEnabled(true)
+                                                        cameraPermissionUiState =
+                                                            CameraPermissionUiState.Off
+                                                    } else {
+                                                        viewModel.setLiveScanEnabled(false)
+                                                        cameraPermissionUiState =
+                                                            nextCameraPermissionUiStateOnEnableAttempt(
+                                                                cameraPermissionUiState
+                                                            )
+                                                    }
+                                                } else {
+                                                    viewModel.setLiveScanEnabled(false)
+                                                    cameraPermissionUiState = CameraPermissionUiState.Off
+                                                }
+                                            }
                                         )
                                     }
                                 }
@@ -791,6 +916,63 @@ private fun CameraHintOverlay(
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.Center)
         )
+    }
+}
+
+private data class CameraPermissionPromptSpec(
+    val title: String,
+    val message: String,
+    val primaryActionLabel: String,
+    val onPrimaryAction: () -> Unit
+)
+
+@Composable
+private fun CameraPermissionPrompt(
+    title: String,
+    message: String,
+    primaryActionLabel: String,
+    onPrimaryAction: () -> Unit,
+    secondaryActionLabel: String,
+    onSecondaryAction: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onSecondaryAction,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(secondaryActionLabel)
+            }
+            Button(
+                onClick = onPrimaryAction,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(primaryActionLabel)
+            }
+        }
     }
 }
 
