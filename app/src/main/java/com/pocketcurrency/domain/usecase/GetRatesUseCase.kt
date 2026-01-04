@@ -2,8 +2,11 @@ package com.pocketcurrency.domain.usecase
 
 import com.pocketcurrency.data.model.ApiRateResult
 import com.pocketcurrency.data.repository.RateUpdateRepository
+import javax.inject.Inject
 
-class GetRatesUseCase(private val repository: RateUpdateRepository) {
+class GetRatesUseCase @Inject constructor(
+    private val repository: RateUpdateRepository
+) {
 
     /**
      * Fetches the live conversion rate from API.

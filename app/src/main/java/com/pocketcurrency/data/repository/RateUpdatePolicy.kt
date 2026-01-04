@@ -3,6 +3,7 @@ package com.pocketcurrency.data.repository
 import com.pocketcurrency.utils.Constants
 import com.pocketcurrency.utils.FrankfurterSchedule
 import java.util.concurrent.TimeUnit
+import javax.inject.Inject
 
 interface RateUpdatePolicy {
     fun isStale(lastUpdatedMillis: Long, nowMillis: Long): Boolean
@@ -25,7 +26,7 @@ class DefaultUpdatePolicy : RateUpdatePolicy {
     }
 }
 
-class RateUpdatePolicyRegistry {
+class RateUpdatePolicyRegistry @Inject constructor() {
     private val policies = mapOf(
         Constants.PROVIDER_FRANKFURTER to FrankfurterUpdatePolicy(),
         Constants.PROVIDER_EXCHANGE_RATES to DefaultUpdatePolicy()

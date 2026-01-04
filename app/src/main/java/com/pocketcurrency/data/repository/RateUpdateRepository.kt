@@ -6,6 +6,7 @@ import com.pocketcurrency.data.network.NetworkMonitor
 import com.pocketcurrency.data.provider.RateProviderRegistry
 import com.pocketcurrency.utils.Constants
 import com.pocketcurrency.utils.FrankfurterSchedule
+import javax.inject.Inject
 
 class RateUpdateRepository(
     private val settingsRepository: SettingsRepository,
@@ -14,6 +15,20 @@ class RateUpdateRepository(
     private val policyRegistry: RateUpdatePolicyRegistry,
     private val timeProvider: () -> Long = System::currentTimeMillis
 ) {
+    @Inject
+    constructor(
+        settingsRepository: SettingsRepository,
+        providerRegistry: RateProviderRegistry,
+        networkMonitor: NetworkMonitor,
+        policyRegistry: RateUpdatePolicyRegistry
+    ) : this(
+        settingsRepository = settingsRepository,
+        providerRegistry = providerRegistry,
+        networkMonitor = networkMonitor,
+        policyRegistry = policyRegistry,
+        timeProvider = System::currentTimeMillis
+    )
+
     fun getActiveProviderConfig() =
         providerRegistry.getProvider(settingsRepository.getService()).config
 

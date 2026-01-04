@@ -1,20 +1,18 @@
 package com.pocketcurrency.viewmodel
 
 import android.app.Application
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.pocketcurrency.R
 import com.pocketcurrency.data.model.CurrencyPairRate
-import com.pocketcurrency.data.network.NetworkMonitor
-import com.pocketcurrency.data.provider.RateProviders
-import com.pocketcurrency.data.repository.RateUpdatePolicyRegistry
 import com.pocketcurrency.data.repository.RateUpdateRepository
 import com.pocketcurrency.data.repository.SettingsRepository
 import com.pocketcurrency.domain.model.RateProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class SettingsUiState(
     val service: String = "",
@@ -38,16 +36,12 @@ data class SettingsUiState(
     val isRefreshingSavedRates: Boolean = false
 )
 
-class SettingsViewModel(
+@HiltViewModel
+class SettingsViewModel @Inject constructor(
     application: Application,
-    private val settingsRepository: SettingsRepository = SettingsRepository(application),
-    private val rateUpdateRepository: RateUpdateRepository = RateUpdateRepository(
-        settingsRepository = settingsRepository,
-        providerRegistry = RateProviders.registry,
-        networkMonitor = NetworkMonitor(application),
-        policyRegistry = RateUpdatePolicyRegistry()
-    ),
-    private val strings: StringProvider = ResourceStringProvider(application)
+    private val settingsRepository: SettingsRepository,
+    private val rateUpdateRepository: RateUpdateRepository,
+    private val strings: StringProvider
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
