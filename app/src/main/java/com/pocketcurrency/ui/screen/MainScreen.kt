@@ -149,9 +149,12 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
 
     DisposableEffect(shouldStartCamera, lifecycleOwner, previewView) {
         var disposed = false
+        var textRecognizer: TextRecognizerHelper? = null
 
         if (shouldStartCamera) {
             val executor = Executors.newSingleThreadExecutor()
+            val priceExtractor = PriceExtractor()
+            textRecognizer = TextRecognizerHelper()
             cameraExecutor = executor
 
             cameraProviderFuture.addListener({
@@ -171,8 +174,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                     .build()
                 imageAnalysis = analysis
 
-                val textRecognizer = TextRecognizerHelper()
-                val priceExtractor = PriceExtractor()
+                val activeRecognizer = textRecognizer ?: return@addListener
 
                 analysis.setAnalyzer(
                     executor,
@@ -181,6 +183,10 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                             androidx.camera.core.ExperimentalGetImage::class
                         )
                         override fun analyze(imageProxy: ImageProxy) {
+                            if (disposed) {
+                                imageProxy.close()
+                                return
+                            }
                             val mediaImage = imageProxy.image
                             if (mediaImage == null) {
                                 imageProxy.close()
@@ -192,7 +198,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                             )
                             scope.launch(Dispatchers.Default) {
                                 try {
-                                    val text = textRecognizer.recognizeText(inputImage)
+                                    val text = activeRecognizer.recognizeText(inputImage)
                                     val detected = priceExtractor.extract(text)
                                     if (detected != null) {
                                         viewModel.onScanResult(
@@ -236,6 +242,8 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
             imageAnalysis = null
             cameraExecutor?.shutdown()
             cameraExecutor = null
+            textRecognizer?.close()
+            textRecognizer = null
             cameraProviderFuture.addListener({
                 cameraProviderFuture.get().unbindAll()
             }, mainExecutor)
