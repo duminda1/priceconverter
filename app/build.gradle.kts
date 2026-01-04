@@ -152,13 +152,13 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // --- Retrofit and Gson ---
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
 
     // Optional: for logging network requests in debug builds
-    debugImplementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.11")
+    debugImplementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // EncryptedSharedPreferences for API keys
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+    implementation("androidx.security:security-crypto:1.0.0")
 
     // Material icons for dropdown indicators
     implementation("androidx.compose.material:material-icons-extended")
