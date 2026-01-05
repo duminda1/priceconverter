@@ -2,6 +2,7 @@ package com.pocketcurrency.di
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.pocketcurrency.data.repository.DefaultPrefsProvider
 import com.pocketcurrency.data.repository.SecurePrefsProvider
 import dagger.Module
 import dagger.Provides
@@ -16,9 +17,20 @@ object StorageModule {
 
     @Provides
     @Singleton
+    @SecurePrefs
     fun provideSecureSharedPreferences(
         @ApplicationContext context: Context
     ): SharedPreferences {
         return SecurePrefsProvider.create(context)
+    }
+
+    @Provides
+    @Singleton
+    @DefaultPrefs
+    fun provideDefaultSharedPreferences(
+        @ApplicationContext context: Context,
+        @SecurePrefs securePrefs: SharedPreferences
+    ): SharedPreferences {
+        return DefaultPrefsProvider.create(context, securePrefs)
     }
 }

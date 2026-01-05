@@ -2,11 +2,13 @@ package com.pocketcurrency.data.repository
 
 import android.content.SharedPreferences
 import com.pocketcurrency.data.model.CurrencyPairRate
+import com.pocketcurrency.di.DefaultPrefs
 import com.pocketcurrency.utils.Constants
 import javax.inject.Inject
 
 class SettingsRepository @Inject constructor(
-    private val prefs: SharedPreferences,
+    @DefaultPrefs private val prefs: SharedPreferences,
+    private val apiKeyRepository: ApiKeyRepository,
     private val userSettings: UserSettingsRepository,
     private val usageRepository: ApiUsageRepository,
     private val rateStorageRepository: RateStorageRepository
@@ -18,13 +20,13 @@ class SettingsRepository @Inject constructor(
         userSettings.setService(service)
     }
 
-    fun getApiKey(): String? = userSettings.getApiKey()
+    fun getApiKey(): String? = apiKeyRepository.getApiKey()
 
     fun setApiKey(apiKey: String) {
-        userSettings.setApiKey(apiKey)
+        apiKeyRepository.setApiKey(apiKey)
     }
 
-    fun hasApiKey(): Boolean = userSettings.hasApiKey()
+    fun hasApiKey(): Boolean = apiKeyRepository.hasApiKey()
 
     fun isFreePlan(): Boolean = userSettings.isFreePlan()
 

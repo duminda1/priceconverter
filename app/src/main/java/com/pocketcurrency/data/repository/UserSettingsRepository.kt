@@ -2,13 +2,14 @@ package com.pocketcurrency.data.repository
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import com.pocketcurrency.di.DefaultPrefs
 import com.pocketcurrency.utils.Constants
 import java.util.Currency
 import java.util.Locale
 import javax.inject.Inject
 
 class UserSettingsRepository @Inject constructor(
-    private val prefs: SharedPreferences
+    @DefaultPrefs private val prefs: SharedPreferences
 ) {
     fun getService(): String {
         val stored = prefs.getString(Constants.PREFS_SERVICE, null)
@@ -30,16 +31,6 @@ class UserSettingsRepository @Inject constructor(
             putString(Constants.PREFS_SERVICE, service)
         }
     }
-
-    fun getApiKey(): String? = prefs.getString(Constants.PREFS_API_KEY, null)
-
-    fun setApiKey(apiKey: String) {
-        prefs.edit {
-            putString(Constants.PREFS_API_KEY, apiKey)
-        }
-    }
-
-    fun hasApiKey(): Boolean = !getApiKey().isNullOrBlank()
 
     fun isFreePlan(): Boolean = prefs.getBoolean(Constants.PREFS_FREE_PLAN, true)
 
