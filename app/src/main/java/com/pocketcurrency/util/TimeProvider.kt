@@ -1,4 +1,4 @@
-package com.pocketcurrency.utils
+package com.pocketcurrency.util
 
 import javax.inject.Inject
 import javax.inject.Singleton

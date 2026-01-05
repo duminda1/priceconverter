@@ -7,11 +7,6 @@ internal enum class CameraPermissionUiState {
     PermanentlyDenied
 }
 
-internal data class CameraPermissionCardState(
-    val show: Boolean,
-    val state: CameraPermissionUiState
-)
-
 internal fun resolveCameraPermissionCardState(
     hasPermission: Boolean,
     liveScanEnabled: Boolean,

@@ -2,7 +2,7 @@ package com.pocketcurrency.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 
 internal object DefaultPrefsProvider {
     fun create(context: Context, securePrefs: SharedPreferences): SharedPreferences {

@@ -1,4 +1,4 @@
-package com.pocketcurrency.utils
+package com.pocketcurrency.util
 
 import java.util.Calendar
 import java.util.TimeZone

@@ -3,7 +3,7 @@ package com.pocketcurrency.data.repository
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.pocketcurrency.di.SecurePrefs
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import javax.inject.Inject
 
 class ApiKeyRepository @Inject constructor(

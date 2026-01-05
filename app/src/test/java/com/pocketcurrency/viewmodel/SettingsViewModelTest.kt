@@ -7,7 +7,7 @@ import com.pocketcurrency.data.repository.ApiUsageState
 import com.pocketcurrency.data.repository.RateUpdateRepository
 import com.pocketcurrency.data.repository.SettingsRepository
 import com.pocketcurrency.domain.model.RateSource
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk

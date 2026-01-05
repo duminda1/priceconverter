@@ -1,7 +1,7 @@
 package com.pocketcurrency.data.provider
 
 import com.pocketcurrency.domain.model.RateProvider
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 
 class RateProviderRegistry(
     providers: List<RateProviderClient>

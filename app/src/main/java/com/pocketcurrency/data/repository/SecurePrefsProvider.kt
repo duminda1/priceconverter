@@ -1,10 +1,12 @@
+@file:Suppress("DEPRECATION")
+
 package com.pocketcurrency.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 
 internal object SecurePrefsProvider {
     fun create(context: Context): SharedPreferences {

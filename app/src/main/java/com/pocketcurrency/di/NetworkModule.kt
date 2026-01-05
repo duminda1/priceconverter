@@ -3,7 +3,7 @@ package com.pocketcurrency.di
 import com.pocketcurrency.BuildConfig
 import com.pocketcurrency.data.api.ExchangeRateApi
 import com.pocketcurrency.data.api.FrankfurterApi
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

@@ -1,7 +1,7 @@
 package com.pocketcurrency.data.api
 
 import com.pocketcurrency.di.NetworkModule
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import okhttp3.CertificatePinner
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull

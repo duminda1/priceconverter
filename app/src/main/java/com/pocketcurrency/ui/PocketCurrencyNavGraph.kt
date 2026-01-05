@@ -6,19 +6,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.pocketcurrency.ui.screen.HelpScreen
 import com.pocketcurrency.ui.screen.MainScreen
 import com.pocketcurrency.ui.screen.SettingsScreen
-import com.pocketcurrency.ui.screen.HelpScreen
 import com.pocketcurrency.viewmodel.MainViewModel
 import com.pocketcurrency.viewmodel.MainSettingsViewModel
 import com.pocketcurrency.viewmodel.ScanViewModel
 import com.pocketcurrency.viewmodel.SettingsViewModel
-
-sealed class Screen(val route: String) {
-    object Main : Screen("main")
-    object Settings : Screen("settings")
-    object Help : Screen("help")
-}
 
 @Composable
 fun PocketCurrencyNavGraph(

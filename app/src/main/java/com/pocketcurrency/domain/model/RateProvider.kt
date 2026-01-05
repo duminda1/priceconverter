@@ -1,6 +1,6 @@
 package com.pocketcurrency.domain.model
 
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 
 enum class RateProvider(
     val id: String,

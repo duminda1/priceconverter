@@ -4,7 +4,7 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.di.DefaultPrefs
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
