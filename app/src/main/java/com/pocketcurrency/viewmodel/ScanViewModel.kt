@@ -2,13 +2,15 @@ package com.pocketcurrency.viewmodel
 
 import androidx.lifecycle.ViewModel
 import com.pocketcurrency.data.repository.ScanRepository
+import com.pocketcurrency.domain.usecase.ProcessScanResultUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
 @HiltViewModel
 class ScanViewModel @Inject constructor(
-    private val scanRepository: ScanRepository
+    private val scanRepository: ScanRepository,
+    private val processScanResultUseCase: ProcessScanResultUseCase
 ) : ViewModel() {
 
     val scanAmount: StateFlow<Double?> = scanRepository.scanAmount
@@ -16,6 +18,6 @@ class ScanViewModel @Inject constructor(
     val scanCurrencyConfident: StateFlow<Boolean> = scanRepository.scanCurrencyConfident
 
     fun onScanResult(amount: Double, currencyCode: String?, isConfident: Boolean) {
-        scanRepository.onScanResult(amount, currencyCode, isConfident)
+        processScanResultUseCase.execute(amount, currencyCode, isConfident)
     }
 }

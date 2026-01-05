@@ -1,5 +1,7 @@
 package com.pocketcurrency.di
 
+import com.pocketcurrency.utils.SystemTimeProvider
+import com.pocketcurrency.utils.TimeProvider
 import com.pocketcurrency.viewmodel.ResourceStringProvider
 import com.pocketcurrency.viewmodel.StringProvider
 import dagger.Binds
@@ -15,4 +17,9 @@ abstract class BindingsModule {
     abstract fun bindStringProvider(
         provider: ResourceStringProvider
     ): StringProvider
+
+    @Binds
+    abstract fun bindTimeProvider(
+        provider: SystemTimeProvider
+    ): TimeProvider
 }
