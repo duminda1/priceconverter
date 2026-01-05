@@ -3,13 +3,14 @@ package com.pocketcurrency.data.repository
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.pocketcurrency.data.model.CurrencyPairRate
+import com.pocketcurrency.di.DefaultPrefs
 import com.pocketcurrency.utils.Constants
 import org.json.JSONArray
 import org.json.JSONObject
 import javax.inject.Inject
 
 class RateStorageRepository @Inject constructor(
-    private val prefs: SharedPreferences
+    @DefaultPrefs private val prefs: SharedPreferences
 ) {
     fun getSavedRates(): List<CurrencyPairRate> {
         return decodeRates(prefs.getString(Constants.PREFS_SAVED_RATES, null))

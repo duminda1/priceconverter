@@ -3,6 +3,7 @@ package com.pocketcurrency.data.repository
 import android.content.SharedPreferences
 import androidx.core.content.edit
 import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.di.DefaultPrefs
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
@@ -16,7 +17,7 @@ data class ApiUsageState(
 )
 
 class ApiUsageRepository @Inject constructor(
-    private val prefs: SharedPreferences
+    @DefaultPrefs private val prefs: SharedPreferences
 ) {
     fun getUsageState(): ApiUsageState {
         val currentMonth = currentMonthKey()
