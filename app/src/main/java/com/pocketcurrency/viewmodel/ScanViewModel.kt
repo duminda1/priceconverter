@@ -2,6 +2,7 @@ package com.pocketcurrency.viewmodel
 
 import android.content.Context
 import android.util.Log
+import com.pocketcurrency.BuildConfig
 import androidx.camera.core.Preview
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
@@ -34,7 +35,9 @@ class ScanViewModel @Inject constructor(
             )
         },
         onError = { error ->
-            Log.e(TAG, "Failed to recognize live scan text", error)
+            if (BuildConfig.DEBUG) {
+                Log.e(TAG, "Failed to recognize live scan text", error)
+            }
         }
     )
 

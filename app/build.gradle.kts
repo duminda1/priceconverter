@@ -23,6 +23,8 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "EXCHANGE_RATE_API_PINS", "\"\"")
+        buildConfigField("String", "FRANKFURTER_API_PINS", "\"\"")
     }
 
     buildTypes {
@@ -53,6 +55,7 @@ android {
     }
 
     buildFeatures {
+        buildConfig = true
         compose = true
     }
 
@@ -158,7 +161,7 @@ dependencies {
     debugImplementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // EncryptedSharedPreferences for API keys
-    implementation("androidx.security:security-crypto:1.0.0")
+    implementation("androidx.security:security-crypto:1.1.0")
 
     // Material icons for dropdown indicators
     implementation("androidx.compose.material:material-icons-extended")

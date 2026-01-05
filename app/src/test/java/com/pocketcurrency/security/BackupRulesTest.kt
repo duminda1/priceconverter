@@ -1,0 +1,38 @@
+package com.pocketcurrency.security
+
+import com.pocketcurrency.utils.Constants
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.charset.StandardCharsets
+
+class BackupRulesTest {
+
+    @Test
+    fun backupRules_excludeEncryptedPrefs() {
+        val xml = readXml("backup_rules.xml")
+        val expected = "path=\"${Constants.PREFS_SECURE_NAME}.xml\""
+
+        assertTrue("backup_rules.xml should exclude $expected", xml.contains(expected))
+    }
+
+    @Test
+    fun dataExtractionRules_excludeEncryptedPrefs() {
+        val xml = readXml("data_extraction_rules.xml")
+        val expected = "path=\"${Constants.PREFS_SECURE_NAME}.xml\""
+
+        assertTrue("data_extraction_rules.xml should exclude $expected", xml.contains(expected))
+    }
+
+    private fun readXml(fileName: String): String {
+        val candidates = listOf(
+            Paths.get("src/main/res/xml", fileName),
+            Paths.get("app/src/main/res/xml", fileName)
+        )
+        val path = candidates.firstOrNull { Files.exists(it) }
+            ?: error("Missing $fileName in expected paths: ${candidates.joinToString()}")
+
+        return String(Files.readAllBytes(path), StandardCharsets.UTF_8)
+    }
+}

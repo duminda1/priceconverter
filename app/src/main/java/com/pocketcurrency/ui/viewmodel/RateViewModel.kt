@@ -1,6 +1,7 @@
 package com.pocketcurrency.ui.viewmodel
 
 import android.util.Log
+import com.pocketcurrency.BuildConfig
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pocketcurrency.domain.usecase.GetRatesUseCase
@@ -24,7 +25,9 @@ class RateViewModel @Inject constructor(
                 val result = getRatesUseCase.execute(baseCurrency, targetCurrency)
                 _rate.value = result.rate?.rate ?: 0.0
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to fetch exchange rates", e)
+                if (BuildConfig.DEBUG) {
+                    Log.e(TAG, "Failed to fetch exchange rates", e)
+                }
             }
         }
     }
