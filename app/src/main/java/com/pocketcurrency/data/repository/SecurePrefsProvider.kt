@@ -3,7 +3,7 @@ package com.pocketcurrency.data.repository
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKeys
+import androidx.security.crypto.MasterKey
 import com.pocketcurrency.utils.Constants
 
 internal object SecurePrefsProvider {
@@ -23,8 +23,7 @@ internal object SecurePrefsProvider {
             runCatching {
                 val ks = java.security.KeyStore.getInstance("AndroidKeyStore")
                 ks.load(null)
-                val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
-                ks.deleteEntry(masterKeyAlias)
+                ks.deleteEntry(MasterKey.DEFAULT_MASTER_KEY_ALIAS)
             }
 
             // 3. Recreate fresh prefs
@@ -33,12 +32,12 @@ internal object SecurePrefsProvider {
     }
 
     private fun createInternal(context: Context): SharedPreferences {
-        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
-
         return EncryptedSharedPreferences.create(
-            Constants.PREFS_SECURE_NAME,
-            masterKeyAlias,
             context,
+            Constants.PREFS_SECURE_NAME,
+            MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build(),
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
