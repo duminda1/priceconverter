@@ -1,0 +1,43 @@
+package com.pocketcurrency.domain.usecase
+
+import com.pocketcurrency.data.repository.ScanRepository
+import com.pocketcurrency.utils.TimeProvider
+import dagger.hilt.android.scopes.ActivityRetainedScoped
+import javax.inject.Inject
+import kotlin.math.abs
+
+@ActivityRetainedScoped
+class ProcessScanResultUseCase @Inject constructor(
+    private val scanRepository: ScanRepository,
+    private val timeProvider: TimeProvider
+) {
+
+    private companion object {
+        private const val SCAN_DEBOUNCE_DELAY_MS = 900L
+        private const val SCAN_MIN_INTERVAL_MS = 350L
+    }
+
+    private var lastScanAt = 0L
+    private var lastScanAmount: Double? = null
+    private var lastScanCurrency: String? = null
+    private var lastScanConfident = false
+
+    fun execute(amount: Double, currencyCode: String?, isConfident: Boolean) {
+        val now = timeProvider.nowMillis()
+        val amountChanged = lastScanAmount == null || abs(lastScanAmount!! - amount) > 0.01
+        val currencyChanged = lastScanCurrency != currencyCode || lastScanConfident != isConfident
+        if (!amountChanged && !currencyChanged && now - lastScanAt < SCAN_DEBOUNCE_DELAY_MS) {
+            return
+        }
+        if (now - lastScanAt < SCAN_MIN_INTERVAL_MS) {
+            return
+        }
+
+        lastScanAt = now
+        lastScanAmount = amount
+        lastScanCurrency = currencyCode
+        lastScanConfident = isConfident
+
+        scanRepository.updateScan(amount, currencyCode, isConfident)
+    }
+}

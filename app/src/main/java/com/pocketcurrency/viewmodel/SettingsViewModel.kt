@@ -1,7 +1,6 @@
 package com.pocketcurrency.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pocketcurrency.R
 import com.pocketcurrency.data.model.CurrencyPairRate
@@ -38,11 +37,10 @@ data class SettingsUiState(
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
-    application: Application,
     private val settingsRepository: SettingsRepository,
     private val rateUpdateRepository: RateUpdateRepository,
     private val strings: StringProvider
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState

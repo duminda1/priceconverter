@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import com.pocketcurrency.ui.PocketCurrencyNavGraph
 import com.pocketcurrency.ui.theme.PocketCurrencyTheme
 import com.pocketcurrency.viewmodel.MainViewModel
+import com.pocketcurrency.viewmodel.MainSettingsViewModel
+import com.pocketcurrency.viewmodel.ScanViewModel
 import com.pocketcurrency.viewmodel.SettingsViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -19,6 +21,8 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val mainViewModel: MainViewModel by viewModels()
+    private val mainSettingsViewModel: MainSettingsViewModel by viewModels()
+    private val scanViewModel: ScanViewModel by viewModels()
     private val settingsViewModel: SettingsViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,6 +37,8 @@ class MainActivity : ComponentActivity() {
                 ) {
                     PocketCurrencyNavGraph(
                         mainViewModel = mainViewModel,
+                        mainSettingsViewModel = mainSettingsViewModel,
+                        scanViewModel = scanViewModel,
                         settingsViewModel = settingsViewModel
                     )
                 }

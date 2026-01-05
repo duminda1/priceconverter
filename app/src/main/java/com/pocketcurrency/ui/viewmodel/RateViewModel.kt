@@ -1,8 +1,7 @@
 package com.pocketcurrency.ui.viewmodel
 
-import android.app.Application
 import android.util.Log
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pocketcurrency.domain.usecase.GetRatesUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,9 +12,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class RateViewModel @Inject constructor(
-    application: Application,
     private val getRatesUseCase: GetRatesUseCase
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     private val _rate = MutableStateFlow(0.0)
     val rate: StateFlow<Double> = _rate

@@ -1,26 +1,17 @@
 package com.pocketcurrency.viewmodel
 
-import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.data.model.CurrencyRate
 import com.pocketcurrency.data.repository.RateRepository
 import com.pocketcurrency.data.repository.RateResult
-import com.pocketcurrency.data.repository.RateUpdateRepository
-import com.pocketcurrency.data.repository.ScanRepository
-import com.pocketcurrency.data.repository.SettingsRepository
-import com.pocketcurrency.domain.model.RateProvider
 import com.pocketcurrency.domain.model.RateSource
 import com.pocketcurrency.domain.model.ServiceStatusType
 import com.pocketcurrency.domain.usecase.ConvertCurrencyUseCase
 import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 
@@ -31,82 +22,10 @@ class MainViewModelTest {
     val dispatcherRule = MainDispatcherRule()
 
     @Test
-    fun refreshSettings_buildsManualCurrencies_andRefreshesFrankfurterRates() =
-        runTest(dispatcherRule.testDispatcher) {
-            val settingsRepository = mockk<SettingsRepository>(relaxed = true)
-            every { settingsRepository.getService() } returns RateProvider.FRANKFURTER.id
-            every { settingsRepository.hasApiKey() } returns false
-            every { settingsRepository.isRealtimeEnabled() } returns false
-            every { settingsRepository.isLiveScanEnabled() } returns true
-            every { settingsRepository.getHomeCurrency() } returns "USD"
-            every { settingsRepository.getDestinationCurrency() } returns "AUD"
-
-            val rateRepository = mockk<RateRepository>()
-            every { rateRepository.getManualRates() } returns listOf(
-                CurrencyPairRate("USD", "AUD", 1.2, 10L)
-            )
-            every { rateRepository.getSavedRates() } returns listOf(
-                CurrencyPairRate("JPY", "USD", 0.01, 11L)
-            )
-
-            val rateUpdateRepository = mockk<RateUpdateRepository>(relaxed = true)
-            every { rateUpdateRepository.getActiveProviderConfig() } returns RateProvider.FRANKFURTER
-            coEvery { rateUpdateRepository.refreshSavedRatesIfStale() } returns Unit
-
-            val viewModel = MainViewModel(
-                mockk(relaxed = true),
-                rateRepository,
-                settingsRepository,
-                rateUpdateRepository,
-                ConvertCurrencyUseCase(),
-                ScanRepository(),
-                TestStringProvider()
-            )
-
-            advanceUntilIdle()
-
-            assertEquals(listOf("AUD", "JPY", "USD"), viewModel.manualCurrencies.value)
-            coVerify { rateUpdateRepository.refreshSavedRatesIfStale() }
-        }
-
-    @Test
-    fun setRealtimeEnabled_notAvailable_forcesFalse() = runTest(dispatcherRule.testDispatcher) {
-        val settingsRepository = mockk<SettingsRepository>(relaxed = true)
-        every { settingsRepository.getService() } returns RateProvider.FRANKFURTER.id
-        every { settingsRepository.hasApiKey() } returns false
-        every { settingsRepository.isRealtimeEnabled() } returns true
-        every { settingsRepository.isLiveScanEnabled() } returns true
-        every { settingsRepository.getHomeCurrency() } returns "USD"
-        every { settingsRepository.getDestinationCurrency() } returns "AUD"
-
-        val rateRepository = mockk<RateRepository>()
-        every { rateRepository.getManualRates() } returns emptyList()
-        every { rateRepository.getSavedRates() } returns emptyList()
-
-        val rateUpdateRepository = mockk<RateUpdateRepository>(relaxed = true)
-        every { rateUpdateRepository.getActiveProviderConfig() } returns RateProvider.FRANKFURTER
-
-        val viewModel = MainViewModel(
-            mockk(relaxed = true),
-            rateRepository,
-            settingsRepository,
-            rateUpdateRepository,
-            ConvertCurrencyUseCase(),
-            ScanRepository(),
-            TestStringProvider()
-        )
-
-        viewModel.setRealtimeEnabled(true)
-
-        assertFalse(viewModel.realtimeEnabled.value)
-        verify { settingsRepository.setRealtimeEnabled(false) }
-    }
-
-    @Test
     fun convertPrice_invalidCurrency_setsError() = runTest(dispatcherRule.testDispatcher) {
         val viewModel = buildViewModel()
 
-        viewModel.convertPrice(12.0, " ", "USD")
+        viewModel.convertPrice(12.0, " ", "USD", realtimeEnabled = true)
 
         val state = viewModel.conversionState.value as ConversionState.Error
         assertEquals("Enter valid currency codes.", state.message)
@@ -115,8 +34,6 @@ class MainViewModelTest {
     @Test
     fun convertPrice_success_updatesState() = runTest(dispatcherRule.testDispatcher) {
         val rateRepository = mockk<RateRepository>()
-        val settingsRepository = baseSettings()
-        val rateUpdateRepository = baseProvider(settingsRepository)
         coEvery {
             rateRepository.getRate("USD", "AUD", true)
         } returns RateResult(
@@ -124,20 +41,13 @@ class MainViewModelTest {
             warningMessage = "Warn",
             errorMessage = null
         )
-        every { rateRepository.getManualRates() } returns emptyList()
-        every { rateRepository.getSavedRates() } returns emptyList()
-
         val viewModel = MainViewModel(
-            mockk(relaxed = true),
             rateRepository,
-            settingsRepository,
-            rateUpdateRepository,
             ConvertCurrencyUseCase(),
-            ScanRepository(),
             TestStringProvider()
         )
 
-        viewModel.convertPrice(10.0, "usd", "aud")
+        viewModel.convertPrice(10.0, "usd", "aud", realtimeEnabled = true)
         advanceUntilIdle()
 
         val state = viewModel.conversionState.value as ConversionState.Success
@@ -151,8 +61,6 @@ class MainViewModelTest {
     @Test
     fun convertPrice_repositoryError_setsError() = runTest(dispatcherRule.testDispatcher) {
         val rateRepository = mockk<RateRepository>()
-        val settingsRepository = baseSettings()
-        val rateUpdateRepository = baseProvider(settingsRepository)
         coEvery {
             rateRepository.getRate("USD", "AUD", true)
         } returns RateResult(
@@ -160,20 +68,13 @@ class MainViewModelTest {
             warningMessage = null,
             errorMessage = "Service down"
         )
-        every { rateRepository.getManualRates() } returns emptyList()
-        every { rateRepository.getSavedRates() } returns emptyList()
-
         val viewModel = MainViewModel(
-            mockk(relaxed = true),
             rateRepository,
-            settingsRepository,
-            rateUpdateRepository,
             ConvertCurrencyUseCase(),
-            ScanRepository(),
             TestStringProvider()
         )
 
-        viewModel.convertPrice(10.0, "USD", "AUD")
+        viewModel.convertPrice(10.0, "USD", "AUD", realtimeEnabled = true)
         advanceUntilIdle()
 
         val state = viewModel.conversionState.value as ConversionState.Error
@@ -183,25 +84,17 @@ class MainViewModelTest {
     @Test
     fun convertPrice_exception_setsError() = runTest(dispatcherRule.testDispatcher) {
         val rateRepository = mockk<RateRepository>()
-        val settingsRepository = baseSettings()
-        val rateUpdateRepository = baseProvider(settingsRepository)
         coEvery {
             rateRepository.getRate("USD", "AUD", true)
         } throws RuntimeException("Boom")
-        every { rateRepository.getManualRates() } returns emptyList()
-        every { rateRepository.getSavedRates() } returns emptyList()
 
         val viewModel = MainViewModel(
-            mockk(relaxed = true),
             rateRepository,
-            settingsRepository,
-            rateUpdateRepository,
             ConvertCurrencyUseCase(),
-            ScanRepository(),
             TestStringProvider()
         )
 
-        viewModel.convertPrice(10.0, "USD", "AUD")
+        viewModel.convertPrice(10.0, "USD", "AUD", realtimeEnabled = true)
         advanceUntilIdle()
 
         val state = viewModel.conversionState.value as ConversionState.Error
@@ -209,21 +102,8 @@ class MainViewModelTest {
     }
 
     @Test
-    fun setLiveScanEnabled_updatesState() = runTest(dispatcherRule.testDispatcher) {
-        val settingsRepository = baseSettings()
-        val viewModel = buildViewModel(settingsRepository = settingsRepository)
-
-        viewModel.setLiveScanEnabled(false)
-
-        assertFalse(viewModel.liveScanEnabled.value)
-        verify { settingsRepository.setLiveScanEnabled(false) }
-    }
-
-    @Test
     fun clearUsageWarning_resetsWarning() = runTest(dispatcherRule.testDispatcher) {
         val rateRepository = mockk<RateRepository>()
-        val settingsRepository = baseSettings()
-        val rateUpdateRepository = baseProvider(settingsRepository)
         coEvery {
             rateRepository.getRate("USD", "AUD", true)
         } returns RateResult(
@@ -231,20 +111,14 @@ class MainViewModelTest {
             warningMessage = "Warn",
             errorMessage = null
         )
-        every { rateRepository.getManualRates() } returns emptyList()
-        every { rateRepository.getSavedRates() } returns emptyList()
 
         val viewModel = MainViewModel(
-            mockk(relaxed = true),
             rateRepository,
-            settingsRepository,
-            rateUpdateRepository,
             ConvertCurrencyUseCase(),
-            ScanRepository(),
             TestStringProvider()
         )
 
-        viewModel.convertPrice(10.0, "USD", "AUD")
+        viewModel.convertPrice(10.0, "USD", "AUD", realtimeEnabled = true)
         advanceUntilIdle()
         assertEquals("Warn", viewModel.usageWarning.value)
 
@@ -254,37 +128,12 @@ class MainViewModelTest {
     }
 
     private fun buildViewModel(
-        settingsRepository: SettingsRepository = baseSettings(),
-        rateRepository: RateRepository = mockk(),
-        rateUpdateRepository: RateUpdateRepository = baseProvider(settingsRepository)
+        rateRepository: RateRepository = mockk(relaxed = true)
     ): MainViewModel {
-        every { rateRepository.getManualRates() } returns emptyList()
-        every { rateRepository.getSavedRates() } returns emptyList()
         return MainViewModel(
-            mockk(relaxed = true),
             rateRepository,
-            settingsRepository,
-            rateUpdateRepository,
             ConvertCurrencyUseCase(),
-            ScanRepository(),
             TestStringProvider()
         )
-    }
-
-    private fun baseSettings(): SettingsRepository {
-        val settingsRepository = mockk<SettingsRepository>(relaxed = true)
-        every { settingsRepository.getService() } returns RateProvider.EXCHANGE_RATES.id
-        every { settingsRepository.hasApiKey() } returns true
-        every { settingsRepository.isRealtimeEnabled() } returns true
-        every { settingsRepository.isLiveScanEnabled() } returns true
-        every { settingsRepository.getHomeCurrency() } returns "USD"
-        every { settingsRepository.getDestinationCurrency() } returns "AUD"
-        return settingsRepository
-    }
-
-    private fun baseProvider(settingsRepository: SettingsRepository): RateUpdateRepository {
-        val rateUpdateRepository = mockk<RateUpdateRepository>(relaxed = true)
-        every { rateUpdateRepository.getActiveProviderConfig() } returns RateProvider.EXCHANGE_RATES
-        return rateUpdateRepository
     }
 }

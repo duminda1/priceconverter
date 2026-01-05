@@ -32,7 +32,6 @@ class SettingsViewModelTest {
         val settingsRepository = baseSettingsRepository()
         val rateUpdateRepository = mockk<RateUpdateRepository>(relaxed = true)
         val viewModel = SettingsViewModel(
-            mockk(relaxed = true),
             settingsRepository,
             rateUpdateRepository,
             TestStringProvider()
@@ -59,7 +58,6 @@ class SettingsViewModelTest {
         every { settingsRepository.getApiKey() } returns "NEWKEY"
 
         val viewModel = SettingsViewModel(
-            mockk(relaxed = true),
             settingsRepository,
             rateUpdateRepository,
             TestStringProvider()
@@ -88,7 +86,6 @@ class SettingsViewModelTest {
         )
 
         val viewModel = SettingsViewModel(
-            mockk(relaxed = true),
             settingsRepository,
             rateUpdateRepository,
             TestStringProvider()
@@ -106,7 +103,6 @@ class SettingsViewModelTest {
     @Test
     fun fetchAndReplaceRate_invalidCodes_setsActionStatus() = runTest(dispatcherRule.testDispatcher) {
         val viewModel = SettingsViewModel(
-            mockk(relaxed = true),
             baseSettingsRepository(),
             mockk(relaxed = true),
             TestStringProvider()
@@ -131,7 +127,6 @@ class SettingsViewModelTest {
             )
 
             val viewModel = SettingsViewModel(
-                mockk(relaxed = true),
                 settingsRepository,
                 rateUpdateRepository,
                 TestStringProvider()
@@ -151,7 +146,6 @@ class SettingsViewModelTest {
         val settingsRepository = baseSettingsRepository()
         every { settingsRepository.getSavedRates() } returns emptyList()
         val viewModel = SettingsViewModel(
-            mockk(relaxed = true),
             settingsRepository,
             mockk(relaxed = true),
             TestStringProvider()
@@ -188,7 +182,6 @@ class SettingsViewModelTest {
             )
 
             val viewModel = SettingsViewModel(
-                mockk(relaxed = true),
                 settingsRepository,
                 rateUpdateRepository,
                 TestStringProvider()
@@ -208,7 +201,6 @@ class SettingsViewModelTest {
     @Test
     fun upsertManualRate_invalidCodes_setsStatus() = runTest(dispatcherRule.testDispatcher) {
         val viewModel = SettingsViewModel(
-            mockk(relaxed = true),
             baseSettingsRepository(),
             mockk(relaxed = true),
             TestStringProvider()
@@ -224,7 +216,6 @@ class SettingsViewModelTest {
         runTest(dispatcherRule.testDispatcher) {
             val settingsRepository = baseSettingsRepository()
             val viewModel = SettingsViewModel(
-                mockk(relaxed = true),
                 settingsRepository,
                 mockk(relaxed = true),
                 TestStringProvider()

@@ -47,20 +47,17 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.google.mlkit.vision.common.InputImage
-import com.pocketcurrency.ocr.OcrThrottle
-import com.pocketcurrency.ocr.PriceExtractor
-import com.pocketcurrency.ocr.TextRecognizerSession
 import com.pocketcurrency.R
+import com.pocketcurrency.ocr.LiveScanCoordinator
 import com.pocketcurrency.ui.component.PriceCard
 import com.pocketcurrency.ui.Screen
 import com.pocketcurrency.viewmodel.ConversionState
 import com.pocketcurrency.viewmodel.MainViewModel
+import com.pocketcurrency.viewmodel.MainSettingsViewModel
+import com.pocketcurrency.viewmodel.ScanViewModel
 import com.pocketcurrency.domain.model.ServiceStatusType
 import com.pocketcurrency.utils.Constants
 import com.pocketcurrency.util.AmountInputFormatter
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -69,7 +66,12 @@ private const val OCR_THROTTLE_MS = 400L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
+fun MainScreen(
+    conversionViewModel: MainViewModel,
+    settingsViewModel: MainSettingsViewModel,
+    scanViewModel: ScanViewModel,
+    navController: NavHostController
+) {
     val context = LocalContext.current
     val activity = context as? Activity
     val scope = rememberCoroutineScope()
@@ -84,21 +86,23 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     }
     var cameraPermissionUiState by rememberSaveable { mutableStateOf(CameraPermissionUiState.Off) }
 
-    val conversionState by viewModel.conversionState.collectAsState()
-    val realtimeEnabled by viewModel.realtimeEnabled.collectAsState()
-    val serviceReady by viewModel.serviceReady.collectAsState()
-    val provider by viewModel.provider.collectAsState()
-    val realtimeAvailable by viewModel.realtimeAvailable.collectAsState()
-    val liveScanEnabled by viewModel.liveScanEnabled.collectAsState()
-    val manualCurrencies by viewModel.manualCurrencies.collectAsState()
-    val manualRates by viewModel.manualRates.collectAsState()
-    val savedRates by viewModel.savedRates.collectAsState()
-    val defaultFrom by viewModel.destinationCurrency.collectAsState()
-    val defaultTo by viewModel.homeCurrency.collectAsState()
-    val serviceStatus by viewModel.serviceStatus.collectAsState()
-    val scanAmount by viewModel.scanAmount.collectAsState()
-    val scanCurrency by viewModel.scanCurrency.collectAsState()
-    val scanCurrencyConfident by viewModel.scanCurrencyConfident.collectAsState()
+    val conversionState by conversionViewModel.conversionState.collectAsState()
+    val serviceStatus by conversionViewModel.serviceStatus.collectAsState()
+    val settingsState by settingsViewModel.uiState.collectAsState()
+    val scanAmount by scanViewModel.scanAmount.collectAsState()
+    val scanCurrency by scanViewModel.scanCurrency.collectAsState()
+    val scanCurrencyConfident by scanViewModel.scanCurrencyConfident.collectAsState()
+
+    val realtimeEnabled = settingsState.realtimeEnabled
+    val serviceReady = settingsState.serviceReady
+    val provider = settingsState.provider
+    val realtimeAvailable = settingsState.realtimeAvailable
+    val liveScanEnabled = settingsState.liveScanEnabled
+    val manualCurrencies = settingsState.manualCurrencies
+    val manualRates = settingsState.manualRates
+    val savedRates = settingsState.savedRates
+    val defaultFrom = settingsState.destinationCurrency
+    val defaultTo = settingsState.homeCurrency
 
     var amountInput by rememberSaveable { mutableStateOf("") }
     var fromCurrency by rememberSaveable { mutableStateOf(defaultFrom) }
@@ -136,15 +140,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
     var imageAnalysis by remember { mutableStateOf<ImageAnalysis?>(null) }
     var cameraExecutor by remember { mutableStateOf<ExecutorService?>(null) }
-    val textRecognizerSession = remember { TextRecognizerSession() }
-    val activeTextRecognizer = remember(shouldStartCamera, lifecycleOwner, previewView) {
-        if (shouldStartCamera) {
-            textRecognizerSession.acquire()
-        } else {
-            null
-        }
-    }
-    val ocrThrottle = remember(shouldStartCamera) { OcrThrottle(OCR_THROTTLE_MS) }
+    val liveScanCoordinator = remember { LiveScanCoordinator(OCR_THROTTLE_MS) }
 
     val requestCameraPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -155,7 +151,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
         hasCameraPermission = isGranted
         cameraPermissionUiState =
             cameraPermissionUiStateForResult(isGranted, shouldShowRationale)
-        viewModel.setLiveScanEnabled(isGranted)
+        settingsViewModel.setLiveScanEnabled(isGranted)
     }
 
     DisposableEffect(shouldStartCamera, lifecycleOwner, previewView) {
@@ -163,7 +159,6 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
 
         if (shouldStartCamera) {
             val executor = Executors.newSingleThreadExecutor()
-            val priceExtractor = PriceExtractor()
             cameraExecutor = executor
 
             cameraProviderFuture.addListener({
@@ -183,56 +178,28 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                     .build()
                 imageAnalysis = analysis
 
-                val activeRecognizer = activeTextRecognizer ?: return@addListener
-
                 analysis.setAnalyzer(
                     executor,
                     object : ImageAnalysis.Analyzer {
-                        @androidx.annotation.OptIn(
-                            androidx.camera.core.ExperimentalGetImage::class
-                        )
                         override fun analyze(imageProxy: ImageProxy) {
                             if (disposed) {
                                 imageProxy.close()
                                 return
                             }
-                            val mediaImage = imageProxy.image
-                            if (mediaImage == null) {
-                                imageProxy.close()
-                                return
-                            }
-                            if (!ocrThrottle.tryStart()) {
-                                imageProxy.close()
-                                return
-                            }
-                            val inputImage = try {
-                                InputImage.fromMediaImage(
-                                    mediaImage,
-                                    imageProxy.imageInfo.rotationDegrees
-                                )
-                            } catch (e: Exception) {
-                                ocrThrottle.onAbort()
-                                imageProxy.close()
-                                return
-                            }
-                            scope.launch(Dispatchers.Default) {
-                                try {
-                                    val text = activeRecognizer.recognizeText(inputImage)
-                                    val detected = priceExtractor.extract(text)
-                                    if (detected != null) {
-                                        viewModel.onScanResult(
-                                            amount = detected.amount,
-                                            currencyCode = detected.currencyCode,
-                                            isConfident = detected.isConfident
-                                        )
-                                    }
-                                } catch (e: Exception) {
+                            liveScanCoordinator.handleImageProxy(
+                                imageProxy = imageProxy,
+                                scope = scope,
+                                onDetected = { detected ->
+                                    scanViewModel.onScanResult(
+                                        amount = detected.amount,
+                                        currencyCode = detected.currencyCode,
+                                        isConfident = detected.isConfident
+                                    )
+                                },
+                                onError = { e ->
                                     Log.e(TAG, "Failed to recognize live scan text", e)
-                                } finally {
-                                    ocrThrottle.onComplete()
-                                    imageProxy.close()
                                 }
-                            }
+                            )
                         }
                     }
                 )
@@ -262,7 +229,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
             imageAnalysis = null
             cameraExecutor?.shutdown()
             cameraExecutor = null
-            textRecognizerSession.close()
+            liveScanCoordinator.close()
             cameraProviderFuture.addListener({
                 cameraProviderFuture.get().unbindAll()
             }, mainExecutor)
@@ -293,13 +260,13 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
     }
 
     LaunchedEffect(Unit) {
-        viewModel.refreshSettings()
+        settingsViewModel.refreshState()
     }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                viewModel.refreshSettings()
+                settingsViewModel.refreshState()
                 val granted = ContextCompat.checkSelfPermission(
                     context,
                     cameraPermission
@@ -501,7 +468,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                             onSecondaryAction = {
                                 cameraPermissionUiState = CameraPermissionUiState.Off
                                 if (liveScanEnabled) {
-                                    viewModel.setLiveScanEnabled(false)
+                                    settingsViewModel.setLiveScanEnabled(false)
                                 }
                             }
                         )
@@ -618,7 +585,14 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
 
                                 Button(
                                     onClick = {
-                                        amountValue?.let { viewModel.convertPrice(it, fromCurrency, toCurrency) }
+                                        amountValue?.let {
+                                            conversionViewModel.convertPrice(
+                                                it,
+                                                fromCurrency,
+                                                toCurrency,
+                                                realtimeEnabled
+                                            )
+                                        }
                                     },
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -821,7 +795,7 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                         Switch(
                                             modifier = Modifier.scale(0.85f),
                                             checked = realtimeEnabled,
-                                            onCheckedChange = { viewModel.setRealtimeEnabled(it) },
+                                            onCheckedChange = { settingsViewModel.setRealtimeEnabled(it) },
                                             enabled = canUseRealtime
                                         )
                                     }
@@ -837,18 +811,18 @@ fun MainScreen(viewModel: MainViewModel, navController: NavHostController) {
                                             onCheckedChange = { enabled ->
                                                 if (enabled) {
                                                     if (hasCameraPermission) {
-                                                        viewModel.setLiveScanEnabled(true)
+                                                        settingsViewModel.setLiveScanEnabled(true)
                                                         cameraPermissionUiState =
                                                             CameraPermissionUiState.Off
                                                     } else {
-                                                        viewModel.setLiveScanEnabled(false)
+                                                        settingsViewModel.setLiveScanEnabled(false)
                                                         cameraPermissionUiState =
                                                             nextCameraPermissionUiStateOnEnableAttempt(
                                                                 cameraPermissionUiState
                                                             )
                                                     }
                                                 } else {
-                                                    viewModel.setLiveScanEnabled(false)
+                                                    settingsViewModel.setLiveScanEnabled(false)
                                                     cameraPermissionUiState = CameraPermissionUiState.Off
                                                 }
                                             }

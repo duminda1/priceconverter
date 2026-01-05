@@ -10,6 +10,8 @@ import com.pocketcurrency.ui.screen.MainScreen
 import com.pocketcurrency.ui.screen.SettingsScreen
 import com.pocketcurrency.ui.screen.HelpScreen
 import com.pocketcurrency.viewmodel.MainViewModel
+import com.pocketcurrency.viewmodel.MainSettingsViewModel
+import com.pocketcurrency.viewmodel.ScanViewModel
 import com.pocketcurrency.viewmodel.SettingsViewModel
 
 sealed class Screen(val route: String) {
@@ -21,6 +23,8 @@ sealed class Screen(val route: String) {
 @Composable
 fun PocketCurrencyNavGraph(
     mainViewModel: MainViewModel,
+    mainSettingsViewModel: MainSettingsViewModel,
+    scanViewModel: ScanViewModel,
     settingsViewModel: SettingsViewModel,
     modifier: Modifier = Modifier
 ) {
@@ -33,7 +37,9 @@ fun PocketCurrencyNavGraph(
     ) {
         composable(Screen.Main.route) {
             MainScreen(
-                viewModel = mainViewModel,
+                conversionViewModel = mainViewModel,
+                settingsViewModel = mainSettingsViewModel,
+                scanViewModel = scanViewModel,
                 navController = navController // pass navController
             )
         }
