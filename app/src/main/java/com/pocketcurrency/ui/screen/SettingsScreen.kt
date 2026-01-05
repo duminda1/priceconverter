@@ -924,18 +924,6 @@ private fun shouldShowCurrencyCodeHelp(value: String): Boolean {
     return trimmed.any { !it.isLetter() }
 }
 
-internal data class ManualRateValidationResult(
-    val normalizedFrom: String,
-    val normalizedTo: String,
-    val rateValue: Double?,
-    val fromError: String?,
-    val toError: String?,
-    val rateError: String?
-) {
-    val isValid: Boolean
-        get() = fromError == null && toError == null && rateError == null
-}
-
 internal fun validateManualRateInput(
     from: String,
     to: String,

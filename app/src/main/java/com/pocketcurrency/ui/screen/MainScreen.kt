@@ -920,13 +920,6 @@ private fun CameraHintOverlay(
     }
 }
 
-private data class CameraPermissionPromptSpec(
-    val title: String,
-    val message: String,
-    val primaryActionLabel: String,
-    val onPrimaryAction: () -> Unit
-)
-
 @Composable
 private fun CameraPermissionPrompt(
     title: String,
