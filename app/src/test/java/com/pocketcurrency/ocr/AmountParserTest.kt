@@ -1,13 +1,28 @@
 package com.pocketcurrency.ocr
 
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Test
+import java.util.Locale
 
 class AmountParserTest {
 
     private val parser = AmountParser()
+    private var originalLocale: Locale? = null
+
+    @Before
+    fun setUp() {
+        originalLocale = Locale.getDefault()
+        Locale.setDefault(Locale.US)
+    }
+
+    @After
+    fun tearDown() {
+        originalLocale?.let { Locale.setDefault(it) }
+    }
 
     @Test
     fun parse_handles_required_currency_formats() {
@@ -42,6 +57,14 @@ class AmountParserTest {
     fun parse_returnsNullOnInvalidInput() {
         val result = parser.parse("..,,€€")
         assertNull("Malformed OCR input should return null.", result)
+    }
+
+    @Test
+    fun parse_biasesDollarToLocalCurrency() {
+        Locale.setDefault(Locale("en", "AU"))
+        val result = parser.parse("\$54.23")
+        assertNotNull("Expected parse for $ symbol with AU locale.", result)
+        assertEquals("AUD", result!!.currencyCode)
     }
 
     private data class Case(

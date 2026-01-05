@@ -19,7 +19,8 @@ class AmountParser {
     )
     private val codePattern = Pattern.compile("(?<![A-Z])[A-Z]{3}(?![A-Z])")
     private val safeSymbolToCode = CurrencySymbols.safeSymbolToCode
-    private val fallbackSymbolToCode = CurrencySymbols.fallbackSymbolToCode
+    private val fallbackSymbolToCode: Map<String, String>
+        get() = CurrencySymbols.fallbackSymbolToCode
     private val symbolPattern = run {
         val symbols = (safeSymbolToCode.keys + fallbackSymbolToCode.keys)
             .sortedWith(compareByDescending<String> { it.length }.thenBy { it })
