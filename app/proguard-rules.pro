@@ -19,3 +19,19 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# --- Release shrinker guardrails ---
+# Retrofit reflects on HTTP method/parameter annotations; keep those methods intact.
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations, Signature
+-keepclassmembers,allowshrinking,allowobfuscation interface com.pocketcurrency.data.api.** {
+    @retrofit2.http.* <methods>;
+}
+
+# Gson reflects on fields; keep @SerializedName members so JSON parsing survives obfuscation.
+-keepclassmembers class com.pocketcurrency.data.model.** {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# Hilt generates entry points/base classes used by bytecode transformation.
+-keep @dagger.hilt.internal.GeneratedEntryPoint class * { *; }
+-keep class * implements dagger.hilt.internal.GeneratedComponentManagerHolder { *; }
