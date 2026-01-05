@@ -5,6 +5,7 @@
     <string name="action_got_it">Got it</string>
     <string name="action_allow_camera">Allow camera</string>
     <string name="action_try_again">Try again</string>
+    <string name="action_download_ocr_model">Download model</string>
     <string name="action_open_settings">Open settings</string>
     <string name="action_not_now">Not now</string>
     <string name="content_swap_currencies">Swap currencies</string>
@@ -14,6 +15,14 @@
     <string name="main_camera_hint">Looking for prices...</string>
     <string name="main_live_scan_label">Live scan</string>
     <string name="main_detected_currency">Detected %1$s</string>
+    <string name="main_ocr_ready">OCR ready</string>
+    <string name="main_ocr_checking">Checking OCR model...</string>
+    <string name="main_ocr_downloading">Downloading OCR model...</string>
+    <string name="main_ocr_unavailable_short">OCR not ready</string>
+    <string name="main_ocr_unavailable_title">OCR not ready</string>
+    <string name="main_ocr_unavailable_body">Live scan needs the OCR model. Connect to the internet to download it.</string>
+    <string name="main_ocr_play_services_body">Google Play services are required for OCR. Update or enable them to continue.</string>
+    <string name="main_ocr_unavailable_retry">OCR is unavailable right now. Check again once services are ready.</string>
     <string name="main_live_scan_off_title">Live scan is off</string>
     <string name="main_live_scan_off_subtitle">Enable it from the toggle below or in Settings.</string>
     <string name="main_camera_permission_title">Enable camera access</string>

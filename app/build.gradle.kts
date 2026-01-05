@@ -139,6 +139,7 @@ dependencies {
 
     // --- ML Kit OCR ---
     implementation("com.google.mlkit:text-recognition:16.0.1")
+    implementation("com.google.android.gms:play-services-base:18.5.0")
 
     // --- CameraX for live image capture ---
     val camerax_version = "1.3.4"
