@@ -51,6 +51,8 @@ import com.pocketcurrency.ui.Screen
 import com.pocketcurrency.viewmodel.ConversionState
 import com.pocketcurrency.viewmodel.MainViewModel
 import com.pocketcurrency.viewmodel.MainSettingsViewModel
+import com.pocketcurrency.viewmodel.OcrReadiness
+import com.pocketcurrency.viewmodel.OcrUnavailableReason
 import com.pocketcurrency.viewmodel.ScanViewModel
 import com.pocketcurrency.domain.model.ServiceStatusType
 import com.pocketcurrency.util.Constants
@@ -83,6 +85,7 @@ fun MainScreen(
     val scanAmount by scanViewModel.scanAmount.collectAsState()
     val scanCurrency by scanViewModel.scanCurrency.collectAsState()
     val scanCurrencyConfident by scanViewModel.scanCurrencyConfident.collectAsState()
+    val ocrReadiness by scanViewModel.ocrReadiness.collectAsState()
 
     val realtimeEnabled = settingsState.realtimeEnabled
     val serviceReady = settingsState.serviceReady
@@ -117,7 +120,8 @@ fun MainScreen(
     val amountValue = AmountInputFormatter.parseInput(amountInput)
     val convertEnabled =
         amountValue != null && normalizedFrom.isNotBlank() && normalizedTo.isNotBlank()
-    val shouldStartCamera = liveScanEnabled && hasCameraPermission
+    val ocrReady = ocrReadiness is OcrReadiness.Ready
+    val shouldStartCamera = liveScanEnabled && hasCameraPermission && ocrReady
     val showCameraHint = shouldStartCamera && scanAmount == null
     val convertLabel = stringResource(R.string.action_convert)
     val fromLabel = stringResource(R.string.main_currency_from_label)
@@ -389,6 +393,60 @@ fun MainScreen(
                                 }
                             }
                         )
+                    } else if (liveScanEnabled && hasCameraPermission) {
+                        when (val readiness = ocrReadiness) {
+                            OcrReadiness.Checking,
+                            OcrReadiness.Unknown -> {
+                                OcrStatusPrompt(
+                                    message = stringResource(R.string.main_ocr_checking),
+                                    showProgress = true
+                                )
+                            }
+                            OcrReadiness.Installing -> {
+                                OcrStatusPrompt(
+                                    message = stringResource(R.string.main_ocr_downloading),
+                                    showProgress = true
+                                )
+                            }
+                            is OcrReadiness.Unavailable -> {
+                                val message = when (readiness.reason) {
+                                    OcrUnavailableReason.ModelNotDownloaded ->
+                                        stringResource(R.string.main_ocr_unavailable_body)
+                                    OcrUnavailableReason.PlayServicesMissing,
+                                    OcrUnavailableReason.PlayServicesDisabled,
+                                    OcrUnavailableReason.PlayServicesUpdateRequired,
+                                    OcrUnavailableReason.PlayServicesUpdating ->
+                                        stringResource(R.string.main_ocr_play_services_body)
+                                    OcrUnavailableReason.Unknown ->
+                                        stringResource(R.string.main_ocr_unavailable_retry)
+                                }
+                                val primaryLabel =
+                                    if (readiness.reason == OcrUnavailableReason.ModelNotDownloaded) {
+                                        stringResource(R.string.action_download_ocr_model)
+                                    } else {
+                                        stringResource(R.string.action_try_again)
+                                    }
+                                val onPrimaryAction =
+                                    if (readiness.reason == OcrUnavailableReason.ModelNotDownloaded) {
+                                        { scanViewModel.requestOcrModelDownload() }
+                                    } else {
+                                        { scanViewModel.refreshOcrReadiness() }
+                                    }
+                                OcrStatusPrompt(
+                                    title = stringResource(R.string.main_ocr_unavailable_title),
+                                    message = message,
+                                    primaryActionLabel = primaryLabel,
+                                    onPrimaryAction = onPrimaryAction,
+                                    secondaryActionLabel = stringResource(R.string.action_not_now),
+                                    onSecondaryAction = { settingsViewModel.setLiveScanEnabled(false) }
+                                )
+                            }
+                            OcrReadiness.Ready -> {
+                                OcrStatusPrompt(
+                                    message = stringResource(R.string.main_ocr_ready)
+                                )
+                            }
+                        }
                     } else {
                         Column(
                             modifier = Modifier
@@ -754,6 +812,31 @@ fun MainScreen(
                                         modifier = Modifier.padding(top = 6.dp)
                                     )
                                 }
+                                if (liveScanEnabled && hasCameraPermission) {
+                                    val ocrStatusText = when (ocrReadiness) {
+                                        OcrReadiness.Ready ->
+                                            stringResource(R.string.main_ocr_ready)
+                                        OcrReadiness.Checking,
+                                        OcrReadiness.Unknown ->
+                                            stringResource(R.string.main_ocr_checking)
+                                        OcrReadiness.Installing ->
+                                            stringResource(R.string.main_ocr_downloading)
+                                        is OcrReadiness.Unavailable ->
+                                            stringResource(R.string.main_ocr_unavailable_short)
+                                    }
+                                    val ocrStatusColor =
+                                        if (ocrReadiness is OcrReadiness.Unavailable) {
+                                            MaterialTheme.colorScheme.error
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                        }
+                                    Text(
+                                        ocrStatusText,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = ocrStatusColor,
+                                        modifier = Modifier.padding(top = 6.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -889,6 +972,67 @@ private fun CameraPermissionPrompt(
                 modifier = Modifier.weight(1f)
             ) {
                 Text(primaryActionLabel)
+            }
+        }
+    }
+}
+
+@Composable
+private fun OcrStatusPrompt(
+    message: String,
+    title: String? = null,
+    primaryActionLabel: String? = null,
+    onPrimaryAction: (() -> Unit)? = null,
+    secondaryActionLabel: String? = null,
+    onSecondaryAction: (() -> Unit)? = null,
+    showProgress: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        if (!title.isNullOrBlank()) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        if (showProgress) {
+            Spacer(modifier = Modifier.height(16.dp))
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+        if (primaryActionLabel != null && onPrimaryAction != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (secondaryActionLabel != null && onSecondaryAction != null) {
+                    OutlinedButton(
+                        onClick = onSecondaryAction,
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(secondaryActionLabel)
+                    }
+                }
+                Button(
+                    onClick = onPrimaryAction,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(primaryActionLabel)
+                }
             }
         }
     }
