@@ -32,9 +32,11 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient {
+        val exchangePins = if (BuildConfig.DEBUG) "" else BuildConfig.EXCHANGE_RATE_API_PINS
+        val frankfurterPins = if (BuildConfig.DEBUG) "" else BuildConfig.FRANKFURTER_API_PINS
         return provideOkHttpClientWithPins(
-            BuildConfig.EXCHANGE_RATE_API_PINS,
-            BuildConfig.FRANKFURTER_API_PINS
+            exchangePins,
+            frankfurterPins
         )
     }
 

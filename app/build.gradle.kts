@@ -38,6 +38,17 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            // TODO(security): Rotate exchange rate API pins before 2026-02-01.
+            buildConfigField(
+                "String",
+                "EXCHANGE_RATE_API_PINS",
+                "\"sha256/vzYXzoQOSpsEdzn3ONdvLgUwlIApQnxmTMtploslE/8=,sha256/kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=\""
+            )
+            buildConfigField(
+                "String",
+                "FRANKFURTER_API_PINS",
+                "\"sha256/D8//K9pEwUhq04zJsf6nBegYSLQV+XLnbR8qAOq6dtc=,sha256/kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=\""
+            )
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
