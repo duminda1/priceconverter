@@ -6,14 +6,11 @@ import com.pocketcurrency.data.model.ApiRateResult
 import com.pocketcurrency.data.model.CurrencyRate
 import com.pocketcurrency.domain.model.RateProvider
 import com.pocketcurrency.domain.model.RateSource
+import com.pocketcurrency.util.executeWithRetry
+import com.pocketcurrency.util.mapNetworkExceptionToMessage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import retrofit2.HttpException
-import java.io.IOException
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,8 +19,6 @@ class ExchangeRatesProvider @Inject constructor(
     private val api: ExchangeRateApi
 ) : RateProviderClient {
     override val config = RateProvider.EXCHANGE_RATES
-
-    private val maxRetryAttempts = 2
 
     override suspend fun fetchRate(
         fromCurrency: String,
@@ -69,11 +64,13 @@ class ExchangeRatesProvider @Inject constructor(
                             ?: "Service unavailable. Please try again."
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 ApiRateResult(
                     rate = null,
                     warningMessage = null,
-                    errorMessage = mapExceptionToMessage(e)
+                    errorMessage = mapNetworkExceptionToMessage(e)
                 )
             }
         }
@@ -118,60 +115,15 @@ class ExchangeRatesProvider @Inject constructor(
                             ?: "Unable to verify the API key."
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 ApiRateResult(
                     rate = null,
                     warningMessage = null,
-                    errorMessage = mapExceptionToMessage(e)
+                    errorMessage = mapNetworkExceptionToMessage(e)
                 )
             }
-        }
-    }
-
-    private suspend fun <T> executeWithRetry(block: suspend () -> T): T {
-        var lastError: Exception? = null
-        var delayMillis = 350L
-        repeat(maxRetryAttempts) { attempt ->
-            try {
-                return block()
-            } catch (e: Exception) {
-                lastError = e
-                val shouldRetry = shouldRetry(e) && attempt < maxRetryAttempts - 1
-                if (!shouldRetry) {
-                    throw e
-                }
-                delay(delayMillis)
-                delayMillis *= 2
-            }
-        }
-        throw lastError ?: IOException("Service unavailable.")
-    }
-
-    private fun shouldRetry(e: Exception): Boolean {
-        return when (e) {
-            is SocketTimeoutException,
-            is UnknownHostException,
-            is ConnectException,
-            is IOException -> true
-            is HttpException -> e.code() >= 500
-            else -> false
-        }
-    }
-
-    private fun mapExceptionToMessage(e: Exception): String {
-        return when (e) {
-            is UnknownHostException,
-            is ConnectException -> "No internet connection. Please try again."
-            is SocketTimeoutException -> "The service is taking too long. Please try again."
-            is HttpException -> {
-                if (e.code() >= 500) {
-                    "Service unavailable. Please try again."
-                } else {
-                    "Unable to reach the service. Please try again."
-                }
-            }
-            is IOException -> "No internet connection. Please try again."
-            else -> e.message ?: "Service unavailable. Please try again."
         }
     }
 }

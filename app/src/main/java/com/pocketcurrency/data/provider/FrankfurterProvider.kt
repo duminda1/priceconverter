@@ -6,13 +6,11 @@ import com.pocketcurrency.data.model.CurrencyRate
 import com.pocketcurrency.domain.model.RateProvider
 import com.pocketcurrency.domain.model.RateSource
 import com.pocketcurrency.util.FrankfurterSchedule
+import com.pocketcurrency.util.executeWithRetry
+import com.pocketcurrency.util.mapNetworkExceptionToMessage
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import retrofit2.HttpException
-import java.io.IOException
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,11 +28,13 @@ class FrankfurterProvider @Inject constructor(
     ): ApiRateResult {
         return withContext(Dispatchers.IO) {
             try {
-                val response = api.latest(
-                    from = fromCurrency.uppercase(),
-                    to = toCurrency.uppercase(),
-                    amount = amount
-                )
+                val response = executeWithRetry {
+                    api.latest(
+                        from = fromCurrency.uppercase(),
+                        to = toCurrency.uppercase(),
+                        amount = amount
+                    )
+                }
                 val rateValue = response.rates[toCurrency.uppercase()]
                 if (rateValue != null) {
                     val updatedMillis =
@@ -56,11 +56,13 @@ class FrankfurterProvider @Inject constructor(
                         errorMessage = "Service unavailable. Please try again."
                     )
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 ApiRateResult(
                     rate = null,
                     warningMessage = null,
-                    errorMessage = mapExceptionToMessage(e)
+                    errorMessage = mapNetworkExceptionToMessage(e)
                 )
             }
         }
@@ -72,22 +74,5 @@ class FrankfurterProvider @Inject constructor(
             warningMessage = null,
             errorMessage = "API key not required for ${config.displayName}."
         )
-    }
-
-    private fun mapExceptionToMessage(e: Exception): String {
-        return when (e) {
-            is UnknownHostException,
-            is ConnectException -> "No internet connection. Please try again."
-            is SocketTimeoutException -> "The service is taking too long. Please try again."
-            is HttpException -> {
-                if (e.code() >= 500) {
-                    "Service unavailable. Please try again."
-                } else {
-                    "Unable to reach the service. Please try again."
-                }
-            }
-            is IOException -> "No internet connection. Please try again."
-            else -> e.message ?: "Service unavailable. Please try again."
-        }
     }
 }
