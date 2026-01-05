@@ -1,11 +1,13 @@
 package com.pocketcurrency.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class ExchangeRateResponse(
-    val success: Boolean,
-    val info: Info
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("info") val info: Info
 ) {
     data class Info(
-        val timestamp: Long,
-        val quote: Double
+        @SerializedName("timestamp") val timestamp: Long,
+        @SerializedName("quote") val quote: Double
     )
 }

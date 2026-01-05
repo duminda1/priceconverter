@@ -1,25 +1,27 @@
 package com.pocketcurrency.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class ConvertResponse(
-    val success: Boolean,
-    val query: Query?,
-    val info: Info?,
-    val result: Double?,
-    val error: ApiError?
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("query") val query: Query?,
+    @SerializedName("info") val info: Info?,
+    @SerializedName("result") val result: Double?,
+    @SerializedName("error") val error: ApiError?
 )
 
 data class Query(
-    val from: String,
-    val to: String,
-    val amount: Double
+    @SerializedName("from") val from: String,
+    @SerializedName("to") val to: String,
+    @SerializedName("amount") val amount: Double
 )
 
 data class Info(
-    val rate: Double?,
-    val timestamp: Long?
+    @SerializedName("rate") val rate: Double?,
+    @SerializedName("timestamp") val timestamp: Long?
 )
 
 data class ApiError(
-    val code: Int?,
-    val info: String?
+    @SerializedName("code") val code: Int?,
+    @SerializedName("info") val info: String?
 )

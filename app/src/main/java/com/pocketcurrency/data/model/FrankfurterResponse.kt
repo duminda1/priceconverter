@@ -1,8 +1,10 @@
 package com.pocketcurrency.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class FrankfurterResponse(
-    val amount: Double,
-    val base: String,
-    val date: String,
-    val rates: Map<String, Double>
+    @SerializedName("amount") val amount: Double,
+    @SerializedName("base") val base: String,
+    @SerializedName("date") val date: String,
+    @SerializedName("rates") val rates: Map<String, Double>
 )
