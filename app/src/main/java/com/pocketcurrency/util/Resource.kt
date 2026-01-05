@@ -1,4 +1,4 @@
-package com.pocketcurrency.utils
+package com.pocketcurrency.util
 
 /**
  * Generic class to represent loading / success / error state

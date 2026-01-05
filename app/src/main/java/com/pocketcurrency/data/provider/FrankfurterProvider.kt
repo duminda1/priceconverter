@@ -5,7 +5,7 @@ import com.pocketcurrency.data.model.ApiRateResult
 import com.pocketcurrency.data.model.CurrencyRate
 import com.pocketcurrency.domain.model.RateProvider
 import com.pocketcurrency.domain.model.RateSource
-import com.pocketcurrency.utils.FrankfurterSchedule
+import com.pocketcurrency.util.FrankfurterSchedule
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException

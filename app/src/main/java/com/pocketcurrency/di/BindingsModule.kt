@@ -1,7 +1,7 @@
 package com.pocketcurrency.di
 
-import com.pocketcurrency.utils.SystemTimeProvider
-import com.pocketcurrency.utils.TimeProvider
+import com.pocketcurrency.util.SystemTimeProvider
+import com.pocketcurrency.util.TimeProvider
 import com.pocketcurrency.viewmodel.ResourceStringProvider
 import com.pocketcurrency.viewmodel.StringProvider
 import dagger.Binds

@@ -4,8 +4,8 @@ import com.pocketcurrency.data.model.ApiRateResult
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.data.network.NetworkMonitor
 import com.pocketcurrency.data.provider.RateProviderRegistry
-import com.pocketcurrency.utils.Constants
-import com.pocketcurrency.utils.FrankfurterSchedule
+import com.pocketcurrency.util.Constants
+import com.pocketcurrency.util.FrankfurterSchedule
 import javax.inject.Inject
 
 class RateUpdateRepository(

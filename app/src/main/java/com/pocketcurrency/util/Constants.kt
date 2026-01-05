@@ -1,4 +1,4 @@
-package com.pocketcurrency.utils
+package com.pocketcurrency.util
 
 object Constants {
     const val DEFAULT_BASE_CURRENCY = "USD"

@@ -1,7 +1,7 @@
 package com.pocketcurrency.domain.usecase
 
 import com.pocketcurrency.data.repository.ScanRepository
-import com.pocketcurrency.utils.TimeProvider
+import com.pocketcurrency.util.TimeProvider
 import dagger.hilt.android.scopes.ActivityRetainedScoped
 import javax.inject.Inject
 import kotlin.math.abs

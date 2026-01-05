@@ -1,6 +1,6 @@
 package com.pocketcurrency.security
 
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.file.Files

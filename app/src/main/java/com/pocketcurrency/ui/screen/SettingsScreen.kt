@@ -48,7 +48,7 @@ import androidx.navigation.NavHostController
 import com.pocketcurrency.R
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.ui.Screen
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import com.pocketcurrency.viewmodel.SettingsViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver

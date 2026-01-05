@@ -3,7 +3,7 @@ package com.pocketcurrency.data.repository
 import android.content.SharedPreferences
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.di.DefaultPrefs
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import javax.inject.Inject
 
 class SettingsRepository @Inject constructor(

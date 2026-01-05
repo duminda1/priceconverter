@@ -1,4 +1,4 @@
-package com.pocketcurrency.utils
+package com.pocketcurrency.util
 
 import android.widget.Toast
 import androidx.compose.runtime.Composable

@@ -1,7 +1,7 @@
 package com.pocketcurrency.data.repository
 
-import com.pocketcurrency.utils.Constants
-import com.pocketcurrency.utils.FrankfurterSchedule
+import com.pocketcurrency.util.Constants
+import com.pocketcurrency.util.FrankfurterSchedule
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 

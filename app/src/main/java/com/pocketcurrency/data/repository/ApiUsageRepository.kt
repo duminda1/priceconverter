@@ -2,7 +2,7 @@ package com.pocketcurrency.data.repository
 
 import android.content.SharedPreferences
 import androidx.core.content.edit
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import com.pocketcurrency.di.DefaultPrefs
 import java.util.Calendar
 import java.util.Locale

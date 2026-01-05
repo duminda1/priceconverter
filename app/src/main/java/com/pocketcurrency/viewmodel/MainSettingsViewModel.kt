@@ -6,7 +6,7 @@ import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.data.repository.RateRepository
 import com.pocketcurrency.data.repository.RateUpdateRepository
 import com.pocketcurrency.data.repository.SettingsRepository
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

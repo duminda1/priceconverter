@@ -53,7 +53,7 @@ import com.pocketcurrency.viewmodel.MainViewModel
 import com.pocketcurrency.viewmodel.MainSettingsViewModel
 import com.pocketcurrency.viewmodel.ScanViewModel
 import com.pocketcurrency.domain.model.ServiceStatusType
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import com.pocketcurrency.util.AmountInputFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)

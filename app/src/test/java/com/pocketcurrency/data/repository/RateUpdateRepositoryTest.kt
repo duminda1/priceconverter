@@ -8,7 +8,7 @@ import com.pocketcurrency.data.provider.RateProviderClient
 import com.pocketcurrency.data.provider.RateProviderRegistry
 import com.pocketcurrency.domain.model.RateProvider
 import com.pocketcurrency.domain.model.RateSource
-import com.pocketcurrency.utils.FrankfurterSchedule
+import com.pocketcurrency.util.FrankfurterSchedule
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify

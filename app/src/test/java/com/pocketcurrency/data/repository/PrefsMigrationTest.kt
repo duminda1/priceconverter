@@ -1,6 +1,6 @@
 package com.pocketcurrency.data.repository
 
-import com.pocketcurrency.utils.Constants
+import com.pocketcurrency.util.Constants
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
