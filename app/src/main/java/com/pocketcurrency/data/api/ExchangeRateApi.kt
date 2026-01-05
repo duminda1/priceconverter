@@ -3,7 +3,9 @@ package com.pocketcurrency.data.api
 import com.pocketcurrency.data.model.ConvertResponse
 import retrofit2.http.GET
 import retrofit2.http.Query
+import androidx.annotation.Keep
 
+@Keep
 interface ExchangeRateApi {
 
     // Convert endpoint: https://api.exchangerate.host/convert?access_key=KEY&from=USD&to=AUD&amount=1

@@ -1,7 +1,9 @@
 package com.pocketcurrency.data.model
 
 import com.google.gson.annotations.SerializedName
+import androidx.annotation.Keep
 
+@Keep
 data class FrankfurterResponse(
     @SerializedName("amount") val amount: Double,
     @SerializedName("base") val base: String,
