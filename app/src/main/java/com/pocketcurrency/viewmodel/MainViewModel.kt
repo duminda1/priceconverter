@@ -7,6 +7,7 @@ import com.pocketcurrency.R
 import com.pocketcurrency.data.model.CurrencyPairRate
 import com.pocketcurrency.data.repository.RateRepository
 import com.pocketcurrency.data.repository.RateUpdateRepository
+import com.pocketcurrency.data.repository.ScanRepository
 import com.pocketcurrency.data.repository.SettingsRepository
 import com.pocketcurrency.domain.model.ConversionResult
 import com.pocketcurrency.domain.model.Price
@@ -34,12 +35,10 @@ class MainViewModel @Inject constructor(
     private val rateRepository: RateRepository,
     private val settingsRepository: SettingsRepository,
     private val rateUpdateRepository: RateUpdateRepository,
+    private val convertCurrencyUseCase: ConvertCurrencyUseCase,
+    private val scanRepository: ScanRepository,
     private val strings: StringProvider
 ) : AndroidViewModel(application) {
-
-    private val convertCurrencyUseCase = ConvertCurrencyUseCase()
-
-    private val scanViewModel = ScanViewModel()
 
     private val _conversionState = MutableStateFlow<ConversionState>(ConversionState.Idle)
     val conversionState: StateFlow<ConversionState> = _conversionState
@@ -91,11 +90,11 @@ class MainViewModel @Inject constructor(
     private val _serviceStatus = MutableStateFlow<ServiceStatus?>(null)
     val serviceStatus: StateFlow<ServiceStatus?> = _serviceStatus
 
-    val scanAmount: StateFlow<Double?> = scanViewModel.scanAmount
+    val scanAmount: StateFlow<Double?> = scanRepository.scanAmount
 
-    val scanCurrency: StateFlow<String?> = scanViewModel.scanCurrency
+    val scanCurrency: StateFlow<String?> = scanRepository.scanCurrency
 
-    val scanCurrencyConfident: StateFlow<Boolean> = scanViewModel.scanCurrencyConfident
+    val scanCurrencyConfident: StateFlow<Boolean> = scanRepository.scanCurrencyConfident
 
     private val _usageWarning = MutableStateFlow<String?>(null)
     val usageWarning: StateFlow<String?> = _usageWarning
@@ -225,7 +224,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun onScanResult(amount: Double, currencyCode: String?, isConfident: Boolean) {
-        scanViewModel.onScanResult(amount, currencyCode, isConfident)
+        scanRepository.onScanResult(amount, currencyCode, isConfident)
     }
 
 }
