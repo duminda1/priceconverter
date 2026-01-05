@@ -14,8 +14,11 @@ import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class ExchangeRatesProvider(
+@Singleton
+class ExchangeRatesProvider @Inject constructor(
     private val api: ExchangeRateApi
 ) : RateProviderClient {
     override val config = RateProvider.EXCHANGE_RATES

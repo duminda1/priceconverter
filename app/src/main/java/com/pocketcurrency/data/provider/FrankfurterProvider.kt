@@ -13,8 +13,11 @@ import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class FrankfurterProvider(
+@Singleton
+class FrankfurterProvider @Inject constructor(
     private val api: FrankfurterApi
 ) : RateProviderClient {
     override val config = RateProvider.FRANKFURTER
