@@ -3,11 +3,19 @@ package com.pocketcurrency.security
 import com.pocketcurrency.util.Constants
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.nio.charset.StandardCharsets
 
 class BackupRulesTest {
+
+    @Test
+    fun backupRules_includeDefaultPrefs() {
+        val xml = readXml("backup_rules.xml")
+        val expected = "path=\"${Constants.PREFS_NAME}.xml\""
+
+        assertTrue("backup_rules.xml should include $expected", xml.contains(expected))
+    }
 
     @Test
     fun backupRules_excludeEncryptedPrefs() {
@@ -15,6 +23,14 @@ class BackupRulesTest {
         val expected = "path=\"${Constants.PREFS_SECURE_NAME}.xml\""
 
         assertTrue("backup_rules.xml should exclude $expected", xml.contains(expected))
+    }
+
+    @Test
+    fun dataExtractionRules_includeDefaultPrefs() {
+        val xml = readXml("data_extraction_rules.xml")
+        val expected = "path=\"${Constants.PREFS_NAME}.xml\""
+
+        assertTrue("data_extraction_rules.xml should include $expected", xml.contains(expected))
     }
 
     @Test
