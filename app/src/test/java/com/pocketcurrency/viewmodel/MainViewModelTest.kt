@@ -5,10 +5,12 @@ import com.pocketcurrency.data.model.CurrencyRate
 import com.pocketcurrency.data.repository.RateRepository
 import com.pocketcurrency.data.repository.RateResult
 import com.pocketcurrency.data.repository.RateUpdateRepository
+import com.pocketcurrency.data.repository.ScanRepository
 import com.pocketcurrency.data.repository.SettingsRepository
 import com.pocketcurrency.domain.model.RateProvider
 import com.pocketcurrency.domain.model.RateSource
 import com.pocketcurrency.domain.model.ServiceStatusType
+import com.pocketcurrency.domain.usecase.ConvertCurrencyUseCase
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -56,6 +58,8 @@ class MainViewModelTest {
                 rateRepository,
                 settingsRepository,
                 rateUpdateRepository,
+                ConvertCurrencyUseCase(),
+                ScanRepository(),
                 TestStringProvider()
             )
 
@@ -87,6 +91,8 @@ class MainViewModelTest {
             rateRepository,
             settingsRepository,
             rateUpdateRepository,
+            ConvertCurrencyUseCase(),
+            ScanRepository(),
             TestStringProvider()
         )
 
@@ -126,6 +132,8 @@ class MainViewModelTest {
             rateRepository,
             settingsRepository,
             rateUpdateRepository,
+            ConvertCurrencyUseCase(),
+            ScanRepository(),
             TestStringProvider()
         )
 
@@ -160,6 +168,8 @@ class MainViewModelTest {
             rateRepository,
             settingsRepository,
             rateUpdateRepository,
+            ConvertCurrencyUseCase(),
+            ScanRepository(),
             TestStringProvider()
         )
 
@@ -186,6 +196,8 @@ class MainViewModelTest {
             rateRepository,
             settingsRepository,
             rateUpdateRepository,
+            ConvertCurrencyUseCase(),
+            ScanRepository(),
             TestStringProvider()
         )
 
@@ -227,6 +239,8 @@ class MainViewModelTest {
             rateRepository,
             settingsRepository,
             rateUpdateRepository,
+            ConvertCurrencyUseCase(),
+            ScanRepository(),
             TestStringProvider()
         )
 
@@ -251,6 +265,8 @@ class MainViewModelTest {
             rateRepository,
             settingsRepository,
             rateUpdateRepository,
+            ConvertCurrencyUseCase(),
+            ScanRepository(),
             TestStringProvider()
         )
     }
