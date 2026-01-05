@@ -7,11 +7,9 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
 import android.text.format.DateUtils
-import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.*
-import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -48,7 +46,6 @@ import androidx.navigation.NavHostController
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.pocketcurrency.R
-import com.pocketcurrency.ocr.LiveScanCoordinator
 import com.pocketcurrency.ui.component.PriceCard
 import com.pocketcurrency.ui.Screen
 import com.pocketcurrency.viewmodel.ConversionState
@@ -58,11 +55,6 @@ import com.pocketcurrency.viewmodel.ScanViewModel
 import com.pocketcurrency.domain.model.ServiceStatusType
 import com.pocketcurrency.utils.Constants
 import com.pocketcurrency.util.AmountInputFormatter
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-
-private const val TAG = "MainScreen"
-private const val OCR_THROTTLE_MS = 400L
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,7 +66,6 @@ fun MainScreen(
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
-    val scope = rememberCoroutineScope()
     val cameraPermission = Manifest.permission.CAMERA
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -133,14 +124,8 @@ fun MainScreen(
     val toLabel = stringResource(R.string.main_currency_to_label)
     val fromPlaceholder = stringResource(R.string.main_currency_from_placeholder)
     val toPlaceholder = stringResource(R.string.main_currency_to_placeholder)
-
-    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
     val lifecycleOwner = LocalLifecycleOwner.current
-    val previewView = remember(context) { androidx.camera.view.PreviewView(context) }
-    val mainExecutor = remember(context) { ContextCompat.getMainExecutor(context) }
-    var imageAnalysis by remember { mutableStateOf<ImageAnalysis?>(null) }
-    var cameraExecutor by remember { mutableStateOf<ExecutorService?>(null) }
-    val liveScanCoordinator = remember { LiveScanCoordinator(OCR_THROTTLE_MS) }
+    val previewView = remember(context) { PreviewView(context) }
 
     val requestCameraPermission = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -154,86 +139,12 @@ fun MainScreen(
         settingsViewModel.setLiveScanEnabled(isGranted)
     }
 
-    DisposableEffect(shouldStartCamera, lifecycleOwner, previewView) {
-        var disposed = false
+    LaunchedEffect(liveScanEnabled, hasCameraPermission) {
+        scanViewModel.setLiveScanActive(liveScanEnabled, hasCameraPermission)
+    }
 
-        if (shouldStartCamera) {
-            val executor = Executors.newSingleThreadExecutor()
-            cameraExecutor = executor
-
-            cameraProviderFuture.addListener({
-                val cameraProvider = cameraProviderFuture.get()
-                if (disposed) {
-                    cameraProvider.unbindAll()
-                    executor.shutdown()
-                    return@addListener
-                }
-
-                val preview = Preview.Builder().build().also {
-                    it.setSurfaceProvider(previewView.surfaceProvider)
-                }
-
-                val analysis = ImageAnalysis.Builder()
-                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                    .build()
-                imageAnalysis = analysis
-
-                analysis.setAnalyzer(
-                    executor,
-                    object : ImageAnalysis.Analyzer {
-                        override fun analyze(imageProxy: ImageProxy) {
-                            if (disposed) {
-                                imageProxy.close()
-                                return
-                            }
-                            liveScanCoordinator.handleImageProxy(
-                                imageProxy = imageProxy,
-                                scope = scope,
-                                onDetected = { detected ->
-                                    scanViewModel.onScanResult(
-                                        amount = detected.amount,
-                                        currencyCode = detected.currencyCode,
-                                        isConfident = detected.isConfident
-                                    )
-                                },
-                                onError = { e ->
-                                    Log.e(TAG, "Failed to recognize live scan text", e)
-                                }
-                            )
-                        }
-                    }
-                )
-
-                val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
-                try {
-                    cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        cameraSelector,
-                        preview,
-                        analysis
-                    )
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to bind camera for live scan", e)
-                }
-            }, mainExecutor)
-        } else {
-            cameraProviderFuture.addListener({
-                cameraProviderFuture.get().unbindAll()
-            }, mainExecutor)
-        }
-
-        onDispose {
-            disposed = true
-            imageAnalysis?.clearAnalyzer()
-            imageAnalysis = null
-            cameraExecutor?.shutdown()
-            cameraExecutor = null
-            liveScanCoordinator.close()
-            cameraProviderFuture.addListener({
-                cameraProviderFuture.get().unbindAll()
-            }, mainExecutor)
-        }
+    LaunchedEffect(lifecycleOwner) {
+        scanViewModel.bindLiveScanLifecycle(lifecycleOwner)
     }
 
     LaunchedEffect(scanAmount) {
@@ -358,6 +269,12 @@ fun MainScreen(
                     elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                 ) {
                     if (shouldStartCamera) {
+                        DisposableEffect(previewView) {
+                            scanViewModel.setLiveScanSurfaceProvider(previewView.surfaceProvider)
+                            onDispose {
+                                scanViewModel.setLiveScanSurfaceProvider(null)
+                            }
+                        }
                         Box(
                             modifier = Modifier.fillMaxSize()
                         ) {
