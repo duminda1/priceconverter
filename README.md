@@ -160,3 +160,20 @@ PocketCurrency is built with accessibility in mind:
 - No API keys are stored in source code
 - No personal user data is collected
 - All data is stored locally on the device
+
+## Backup & Restore
+
+PocketCurrency uses Android Auto Backup and device-to-device transfer to preserve non-sensitive data during device migration.
+
+What is backed up:
+- `price_converter_prefs.xml` (manual rates, saved rates, and user settings)
+
+What is not backed up:
+- `price_converter_secure_prefs.xml` (encrypted API keys)
+
+Privacy and UX trade-offs:
+- Convenience: users keep manual rates and settings when moving to a new device.
+- Privacy: data may be stored in the user's Google backup; users can disable system backups to opt out.
+- Security: API keys must be re-entered after restore because encrypted prefs are excluded.
+
+Backup rules are explicit in `app/src/main/res/xml/backup_rules.xml` and `app/src/main/res/xml/data_extraction_rules.xml`, and verified by unit tests.
