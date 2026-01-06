@@ -8,6 +8,7 @@ plugins {
 
     alias(libs.plugins.firebase.appdistribution)
 
+    id("com.google.dagger.hilt.android")
     id("kotlin-kapt")
     id("jacoco")
 }
