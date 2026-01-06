@@ -63,6 +63,8 @@ private class FakeLiveScanController : LiveScanControllerDelegate {
         lastPermission = permissionGranted
     }
 
+    override fun setSelectedFromCurrency(currencyCode: String?) = Unit
+
     override fun close() = Unit
 }
 

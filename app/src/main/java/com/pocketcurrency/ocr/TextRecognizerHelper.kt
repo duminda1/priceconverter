@@ -17,10 +17,15 @@ class TextRecognizerHelper(
      */
     suspend fun recognizeText(image: InputImage): String {
         val result = recognizer.process(image).await()
-        return result.text
+        val blockTexts = result.textBlocks.map { it.text }
+        return formatRecognizedText(result.text, blockTexts)
     }
 
     override fun close() {
         recognizer.close()
     }
+}
+
+internal fun formatRecognizedText(fallbackText: String, blockTexts: List<String>): String {
+    return if (blockTexts.isEmpty()) fallbackText else blockTexts.joinToString("\n")
 }

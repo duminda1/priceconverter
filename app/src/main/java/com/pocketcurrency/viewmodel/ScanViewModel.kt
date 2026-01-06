@@ -15,6 +15,8 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import com.pocketcurrency.BuildConfig
 import com.pocketcurrency.data.repository.ScanRepository
 import com.pocketcurrency.domain.usecase.ProcessScanResultUseCase
+import com.pocketcurrency.ocr.CurrencyConfidence
+import com.pocketcurrency.ocr.CurrencySource
 import com.pocketcurrency.ocr.DetectedPrice
 import com.pocketcurrency.ocr.LiveScanController
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -34,7 +36,8 @@ class ScanViewModel @Inject constructor(
 
     val scanAmount: StateFlow<Double?> = scanRepository.scanAmount
     val scanCurrency: StateFlow<String?> = scanRepository.scanCurrency
-    val scanCurrencyConfident: StateFlow<Boolean> = scanRepository.scanCurrencyConfident
+    val scanCurrencyConfidence: StateFlow<CurrencyConfidence?> = scanRepository.scanCurrencyConfidence
+    val scanCurrencySource: StateFlow<CurrencySource?> = scanRepository.scanCurrencySource
 
     private val _ocrReadiness = MutableStateFlow<OcrReadiness>(OcrReadiness.Unknown)
     val ocrReadiness: StateFlow<OcrReadiness> = _ocrReadiness
@@ -43,7 +46,8 @@ class ScanViewModel @Inject constructor(
         onScanResult(
             amount = detected.amount,
             currencyCode = detected.currencyCode,
-            isConfident = detected.isConfident
+            currencyConfidence = detected.currencyConfidence,
+            currencySource = detected.currencySource
         )
     }
     private val onErrorHandler: (Throwable) -> Unit = { error ->
@@ -63,8 +67,18 @@ class ScanViewModel @Inject constructor(
     private var liveScanRequested = false
     private var hasCameraPermission = false
 
-    fun onScanResult(amount: Double, currencyCode: String?, isConfident: Boolean) {
-        processScanResultUseCase.execute(amount, currencyCode, isConfident)
+    fun onScanResult(
+        amount: Double,
+        currencyCode: String?,
+        currencyConfidence: CurrencyConfidence,
+        currencySource: CurrencySource
+    ) {
+        processScanResultUseCase.execute(
+            amount,
+            currencyCode,
+            currencyConfidence,
+            currencySource
+        )
     }
 
     internal fun setLiveScanControllerForTesting(controller: LiveScanControllerDelegate) {
@@ -100,6 +114,10 @@ class ScanViewModel @Inject constructor(
         if (enabled && hasPermission) {
             refreshOcrReadiness()
         }
+    }
+
+    fun setSelectedFromCurrency(currencyCode: String?) {
+        liveScanController().setSelectedFromCurrency(currencyCode)
     }
 
     fun refreshOcrReadiness() {
@@ -169,6 +187,7 @@ internal interface LiveScanControllerDelegate : AutoCloseable {
     fun bindToLifecycle(owner: LifecycleOwner)
     fun setSurfaceProvider(provider: Preview.SurfaceProvider?)
     fun setActive(enabled: Boolean, permissionGranted: Boolean)
+    fun setSelectedFromCurrency(currencyCode: String?)
 }
 
 internal class LiveScanControllerDelegateImpl(
@@ -192,6 +211,10 @@ internal class LiveScanControllerDelegateImpl(
 
     override fun setActive(enabled: Boolean, permissionGranted: Boolean) {
         controller.setActive(enabled, permissionGranted)
+    }
+
+    override fun setSelectedFromCurrency(currencyCode: String?) {
+        controller.setSelectedFromCurrency(currencyCode)
     }
 
     override fun close() {

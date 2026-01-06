@@ -6,6 +6,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Locale
 
 class LiveScanCoordinator(
     throttleMs: Long,
@@ -15,6 +16,22 @@ class LiveScanCoordinator(
 ) : AutoCloseable {
 
     private val ocrThrottle = OcrThrottle(throttleMs)
+    private val priceStabilizer = OcrPriceStabilizer(priceExtractor)
+    @Volatile
+    private var currencyContext = CurrencyContext(
+        selectedFromCurrency = null,
+        locale = Locale.getDefault()
+    )
+
+    fun setSelectedFromCurrency(currencyCode: String?) {
+        currencyContext = CurrencyContext(
+            selectedFromCurrency = currencyCode
+                ?.trim()
+                ?.uppercase(Locale.ROOT)
+                ?.takeIf { it.isNotBlank() },
+            locale = Locale.getDefault()
+        )
+    }
 
     @androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
     fun handleImageProxy(
@@ -47,7 +64,7 @@ class LiveScanCoordinator(
         scope.launch(dispatcher) {
             try {
                 val text = recognizer.recognizeText(inputImage)
-                val detected = priceExtractor.extract(text)
+                val detected = priceStabilizer.onFrame(text, currencyContext)
                 if (detected != null) {
                     onDetected(detected)
                 }
@@ -61,6 +78,7 @@ class LiveScanCoordinator(
     }
 
     override fun close() {
+        priceStabilizer.reset()
         textRecognizerSession.close()
     }
 }
