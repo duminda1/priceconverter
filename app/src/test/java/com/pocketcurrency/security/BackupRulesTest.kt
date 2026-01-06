@@ -1,6 +1,7 @@
 package com.pocketcurrency.security
 
 import com.pocketcurrency.util.Constants
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.nio.charset.StandardCharsets
@@ -22,7 +23,7 @@ class BackupRulesTest {
         val xml = readXml("backup_rules.xml")
         val expected = "path=\"${Constants.PREFS_SECURE_NAME}.xml\""
 
-        assertTrue("backup_rules.xml should exclude $expected", xml.contains(expected))
+        assertFalse("backup_rules.xml should not include $expected", xml.contains(expected))
     }
 
     @Test
@@ -38,7 +39,7 @@ class BackupRulesTest {
         val xml = readXml("data_extraction_rules.xml")
         val expected = "path=\"${Constants.PREFS_SECURE_NAME}.xml\""
 
-        assertTrue("data_extraction_rules.xml should exclude $expected", xml.contains(expected))
+        assertFalse("data_extraction_rules.xml should not include $expected", xml.contains(expected))
     }
 
     private fun readXml(fileName: String): String {

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!-- Back up non-sensitive prefs; keep encrypted API key prefs excluded. -->
+    <!-- Back up non-sensitive prefs; encrypted prefs are intentionally not included. -->
     <include domain="sharedpref" path="price_converter_prefs.xml"/>
 </full-backup-content>

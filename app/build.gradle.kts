@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.compose)
 
     alias(libs.plugins.firebase.appdistribution)
 
@@ -82,6 +83,11 @@ android {
         lintConfig = file("lint.xml")
         checkReleaseBuilds = true
     }
+}
+
+configurations.configureEach {
+    // Work around Hilt/Javapoet classpath mismatch in the aggregate deps task.
+    resolutionStrategy.force("com.squareup:javapoet:1.13.0")
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {

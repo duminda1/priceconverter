@@ -7,6 +7,8 @@ import java.io.IOException
 import java.net.ConnectException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
+import javax.net.ssl.SSLHandshakeException
+import javax.net.ssl.SSLPeerUnverifiedException
 
 internal const val DEFAULT_MAX_RETRY_ATTEMPTS = 2
 internal const val DEFAULT_RETRY_DELAY_MILLIS = 350L
@@ -40,6 +42,8 @@ internal suspend fun <T> executeWithRetry(
 
 internal fun shouldRetryNetworkException(e: Exception): Boolean {
     return when (e) {
+        is SSLPeerUnverifiedException,
+        is SSLHandshakeException -> false
         is SocketTimeoutException,
         is UnknownHostException,
         is ConnectException,
@@ -51,6 +55,8 @@ internal fun shouldRetryNetworkException(e: Exception): Boolean {
 
 internal fun mapNetworkExceptionToMessage(e: Exception): String {
     return when (e) {
+        is SSLPeerUnverifiedException,
+        is SSLHandshakeException -> "Service temporarily unavailable. Please try again."
         is UnknownHostException,
         is ConnectException -> "No internet connection. Please try again."
         is SocketTimeoutException -> "The service is taking too long. Please try again."

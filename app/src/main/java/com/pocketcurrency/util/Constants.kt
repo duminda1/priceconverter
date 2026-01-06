@@ -28,4 +28,8 @@ object Constants {
     const val PREFS_DESTINATION_CURRENCY = "destination_currency"
     const val PREFS_DESTINATION_AUTO = "destination_currency_auto"
     const val PREFS_RATE_REFRESH_CHECK_PREFIX = "rate_refresh_check_"
+    // Pin rotation: update these prefs via remote config and bump PREFS_PIN_CONFIG_VERSION.
+    const val PREFS_PIN_CONFIG_VERSION = "pin_config_version"
+    const val PREFS_EXCHANGE_RATE_PINS = "exchange_rate_pins"
+    const val PREFS_FRANKFURTER_PINS = "frankfurter_pins"
 }

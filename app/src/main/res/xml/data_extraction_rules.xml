@@ -2,8 +2,10 @@
 <data-extraction-rules>
     <cloud-backup>
         <include domain="sharedpref" path="price_converter_prefs.xml" />
+        <!-- Encrypted prefs are intentionally not included. -->
     </cloud-backup>
     <device-transfer>
         <include domain="sharedpref" path="price_converter_prefs.xml" />
+        <!-- Encrypted prefs are intentionally not included. -->
     </device-transfer>
 </data-extraction-rules>
