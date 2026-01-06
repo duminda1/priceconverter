@@ -2,5 +2,4 @@
 <full-backup-content>
     <!-- Back up non-sensitive prefs; keep encrypted API key prefs excluded. -->
     <include domain="sharedpref" path="price_converter_prefs.xml"/>
-    <exclude domain="sharedpref" path="price_converter_secure_prefs.xml"/>
 </full-backup-content>
