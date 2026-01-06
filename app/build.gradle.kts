@@ -22,6 +22,9 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Pinning config: CSV lists of sha256 pins. Keep current + next for overlap.
+        // Remote config can override when PREFS_PIN_CONFIG_VERSION >= PIN_CONFIG_VERSION.
+        buildConfigField("int", "PIN_CONFIG_VERSION", "1")
         buildConfigField("String", "EXCHANGE_RATE_API_PINS", "\"\"")
         buildConfigField("String", "FRANKFURTER_API_PINS", "\"\"")
     }
@@ -37,7 +40,8 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            // TODO(security): Rotate exchange rate API pins before 2026-02-01.
+            // TODO(security): Add next pins and bump PIN_CONFIG_VERSION before 2026-02-01.
+            // Keep current + next pins to avoid outages during certificate rotation.
             buildConfigField(
                 "String",
                 "EXCHANGE_RATE_API_PINS",
