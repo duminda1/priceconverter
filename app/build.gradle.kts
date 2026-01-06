@@ -3,12 +3,11 @@ import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.compose)
 
     alias(libs.plugins.firebase.appdistribution)
 
-    id("com.google.dagger.hilt.android")
     id("kotlin-kapt")
     id("jacoco")
 }
@@ -24,6 +23,9 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Pinning config: CSV lists of sha256 pins. Keep current + next for overlap.
+        // Remote config can override when PREFS_PIN_CONFIG_VERSION >= PIN_CONFIG_VERSION.
+        buildConfigField("int", "PIN_CONFIG_VERSION", "1")
         buildConfigField("String", "EXCHANGE_RATE_API_PINS", "\"\"")
         buildConfigField("String", "FRANKFURTER_API_PINS", "\"\"")
     }
@@ -39,7 +41,8 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            // TODO(security): Rotate exchange rate API pins before 2026-02-01.
+            // TODO(security): Add next pins and bump PIN_CONFIG_VERSION before 2026-02-01.
+            // Keep current + next pins to avoid outages during certificate rotation.
             buildConfigField(
                 "String",
                 "EXCHANGE_RATE_API_PINS",
@@ -71,11 +74,20 @@ android {
         compose = true
     }
 
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.15"
+    }
+
     lint {
         abortOnError = true
         lintConfig = file("lint.xml")
         checkReleaseBuilds = true
     }
+}
+
+configurations.configureEach {
+    // Work around Hilt/Javapoet classpath mismatch in the aggregate deps task.
+    resolutionStrategy.force("com.squareup:javapoet:1.13.0")
 }
 
 tasks.register<JacocoReport>("jacocoTestReport") {

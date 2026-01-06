@@ -1,6 +1,7 @@
 package com.pocketcurrency.data.api
 
 import com.pocketcurrency.di.NetworkModule
+import com.pocketcurrency.data.repository.FakeSharedPreferences
 import com.pocketcurrency.util.Constants
 import okhttp3.CertificatePinner
 import org.junit.Assert.assertEquals
@@ -12,9 +13,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 class NetworkModuleTest {
 
+    private fun createPrefs() = FakeSharedPreferences()
+
     @Test
     fun retrofit_usesConfiguredBaseUrls() {
-        val client = NetworkModule.provideOkHttpClient()
+        val client = NetworkModule.provideOkHttpClient(createPrefs())
         val converterFactory = NetworkModule.provideGsonConverterFactory()
         val exchangeRetrofit =
             NetworkModule.provideExchangeRateRetrofit(client, converterFactory)
@@ -27,7 +30,7 @@ class NetworkModuleTest {
 
     @Test
     fun retrofit_includesGsonConverter() {
-        val client = NetworkModule.provideOkHttpClient()
+        val client = NetworkModule.provideOkHttpClient(createPrefs())
         val converterFactory = NetworkModule.provideGsonConverterFactory()
         val retrofit = NetworkModule.provideExchangeRateRetrofit(client, converterFactory)
 
@@ -52,6 +55,16 @@ class NetworkModuleTest {
 
         assertNotNull(pinner)
         assertTrue(pinner != CertificatePinner.DEFAULT)
+    }
+
+    @Test
+    fun buildCertificatePinner_ignoresInvalidPins() {
+        val pinner = NetworkModule.buildCertificatePinnerForPins(
+            "not-a-pin",
+            ""
+        )
+
+        assertNull(pinner)
     }
 
 }

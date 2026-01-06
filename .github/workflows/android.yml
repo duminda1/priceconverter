@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true"
+        GRADLE_OPTS: "-Djava.net.preferIPv4Stack=true -Djava.net.preferIPv6Addresses=false"
 
     steps:
       - name: Checkout repo
@@ -28,6 +28,8 @@ jobs:
 
       - name: Cache Gradle
         uses: gradle/actions/setup-gradle@v3
+        with:
+            cache-read-only: false
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
@@ -36,11 +38,8 @@ jobs:
       - name: Build debug APK
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Run Android Lint
-        run: ./gradlew lint --no-daemon
-
-      - name: Run unit tests + coverage
-        run: ./gradlew testDebugUnitTest jacocoTestReport --no-daemon
+      - name: Run Lint + unit tests + coverage
+        run: ./gradlew lint testDebugUnitTest jacocoTestReport --no-daemon
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4

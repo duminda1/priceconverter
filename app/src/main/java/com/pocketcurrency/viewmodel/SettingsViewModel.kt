@@ -240,7 +240,8 @@ class SettingsViewModel @Inject constructor(
                 }
             }
 
-            val status = if (firstError == null) {
+            val errorMessage = firstError
+            val status = if (errorMessage == null) {
                 strings.get(
                     R.string.status_refreshed_saved_rates,
                     refreshedCount,
@@ -251,7 +252,7 @@ class SettingsViewModel @Inject constructor(
                     R.string.status_refreshed_saved_rates_with_error,
                     refreshedCount,
                     savedRates.size,
-                    firstError
+                    errorMessage
                 )
             }
 

@@ -1,5 +1,6 @@
 package com.pocketcurrency.di
 
+import android.content.SharedPreferences
 import com.pocketcurrency.BuildConfig
 import com.pocketcurrency.data.api.ExchangeRateApi
 import com.pocketcurrency.data.api.FrankfurterApi
@@ -31,9 +32,24 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
-        val exchangePins = if (BuildConfig.DEBUG) "" else BuildConfig.EXCHANGE_RATE_API_PINS
-        val frankfurterPins = if (BuildConfig.DEBUG) "" else BuildConfig.FRANKFURTER_API_PINS
+    fun provideOkHttpClient(
+        @DefaultPrefs prefs: SharedPreferences
+    ): OkHttpClient {
+        // Pin rotation strategy: include current + next pins per host. Remote config can override
+        // CSV lists by writing to prefs with a higher PIN_CONFIG_VERSION for zero-downtime rotation.
+        val defaultExchangePins = if (BuildConfig.DEBUG) "" else BuildConfig.EXCHANGE_RATE_API_PINS
+        val defaultFrankfurterPins =
+            if (BuildConfig.DEBUG) "" else BuildConfig.FRANKFURTER_API_PINS
+        val exchangePins = resolvePinsCsv(
+            prefs = prefs,
+            prefsKey = Constants.PREFS_EXCHANGE_RATE_PINS,
+            buildConfigPinsCsv = defaultExchangePins
+        )
+        val frankfurterPins = resolvePinsCsv(
+            prefs = prefs,
+            prefsKey = Constants.PREFS_FRANKFURTER_PINS,
+            buildConfigPinsCsv = defaultFrankfurterPins
+        )
         return provideOkHttpClientWithPins(
             exchangePins,
             frankfurterPins
@@ -121,13 +137,46 @@ object NetworkModule {
         return builder.build()
     }
 
+    // Remote rotation path: store CSV pins + PREFS_PIN_CONFIG_VERSION from a secure config source.
+    // When the stored version >= BuildConfig.PIN_CONFIG_VERSION, the remote list overrides.
+    private fun resolvePinsCsv(
+        prefs: SharedPreferences,
+        prefsKey: String,
+        buildConfigPinsCsv: String
+    ): String {
+        val remoteVersion = prefs.getInt(Constants.PREFS_PIN_CONFIG_VERSION, 0)
+        val useRemote = remoteVersion >= BuildConfig.PIN_CONFIG_VERSION
+        val remotePins = if (useRemote) prefs.getString(prefsKey, null) else null
+        val hasValidRemotePins = !remotePins.isNullOrBlank() &&
+            parsePins(remotePins).isNotEmpty()
+        return if (hasValidRemotePins) remotePins.orEmpty() else buildConfigPinsCsv
+    }
+
     private fun parsePins(pinsCsv: String): List<String> {
         if (pinsCsv.isBlank()) {
             return emptyList()
         }
         return pinsCsv.split(',')
             .map { it.trim() }
-            .filter { it.isNotEmpty() }
+            // Validate format so malformed remote config doesn't disable pinning.
+            .filter { it.isNotEmpty() && isValidPin(it) }
+    }
+
+    private fun isValidPin(pin: String): Boolean {
+        return when {
+            pin.startsWith("sha256/") ->
+                isValidBase64(pin.removePrefix("sha256/"), expectedLength = 44)
+            pin.startsWith("sha1/") ->
+                isValidBase64(pin.removePrefix("sha1/"), expectedLength = 28)
+            else -> false
+        }
+    }
+
+    private fun isValidBase64(value: String, expectedLength: Int): Boolean {
+        if (value.length != expectedLength) {
+            return false
+        }
+        return value.all { it.isLetterOrDigit() || it == '+' || it == '/' || it == '=' }
     }
 
     private fun addPins(
