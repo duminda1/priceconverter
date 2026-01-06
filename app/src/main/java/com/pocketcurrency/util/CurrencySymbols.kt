@@ -1,15 +1,16 @@
 package com.pocketcurrency.util
 
-import java.util.Currency
-import java.util.Locale
-
 object CurrencySymbols {
     // Unambiguous symbols only.
     val safeSymbolToCode: Map<String, String> = mapOf(
         "A$" to "AUD",
+        "US$" to "USD",
         "NZ$" to "NZD",
         "HK$" to "HKD",
         "S$" to "SGD",
+        "CN¥" to "CNY",
+        "NT$" to "TWD",
+        "RP" to "IDR",
         "€" to "EUR",
         "₹" to "INR",
         "₽" to "RUB",
@@ -23,18 +24,8 @@ object CurrencySymbols {
     // Heuristic defaults for ambiguous symbols.
     val fallbackSymbolToCode: Map<String, String>
         get() = mapOf(
-            "$" to (localDollarCurrencyCode() ?: "USD"),
+            "$" to "USD",
             "¥" to "JPY",
             "£" to "GBP"
         )
-
-    private fun localDollarCurrencyCode(locale: Locale = Locale.getDefault()): String? {
-        return try {
-            val currency = Currency.getInstance(locale)
-            val symbol = currency.getSymbol(locale)
-            if (symbol.contains("$")) currency.currencyCode else null
-        } catch (e: Exception) {
-            null
-        }
-    }
 }

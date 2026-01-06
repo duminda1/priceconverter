@@ -73,6 +73,10 @@ class LiveScanController(
         refreshState()
     }
 
+    fun setSelectedFromCurrency(currencyCode: String?) {
+        coordinator.setSelectedFromCurrency(currencyCode)
+    }
+
     override fun onStart(owner: LifecycleOwner) {
         isLifecycleStarted = true
         refreshState()

@@ -46,6 +46,7 @@ import androidx.navigation.NavHostController
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.pocketcurrency.R
+import com.pocketcurrency.ocr.CurrencySource
 import com.pocketcurrency.ui.component.PriceCard
 import com.pocketcurrency.ui.Screen
 import com.pocketcurrency.viewmodel.ConversionState
@@ -84,7 +85,7 @@ fun MainScreen(
     val settingsState by settingsViewModel.uiState.collectAsState()
     val scanAmount by scanViewModel.scanAmount.collectAsState()
     val scanCurrency by scanViewModel.scanCurrency.collectAsState()
-    val scanCurrencyConfident by scanViewModel.scanCurrencyConfident.collectAsState()
+    val scanCurrencySource by scanViewModel.scanCurrencySource.collectAsState()
     val ocrReadiness by scanViewModel.ocrReadiness.collectAsState()
 
     val realtimeEnabled = settingsState.realtimeEnabled
@@ -155,11 +156,16 @@ fun MainScreen(
         scanAmount?.let { amountInput = AmountInputFormatter.formatAmount(it) }
     }
 
-    LaunchedEffect(scanCurrency, scanCurrencyConfident) {
-        if (scanCurrencyConfident && !scanCurrency.isNullOrBlank()) {
+    LaunchedEffect(scanCurrency, scanCurrencySource) {
+        if (!hasCustomFrom && !scanCurrency.isNullOrBlank()) {
             fromCurrency = scanCurrency!!
-            hasCustomFrom = true
         }
+    }
+
+    LaunchedEffect(normalizedFrom) {
+        scanViewModel.setSelectedFromCurrency(
+            normalizedFrom.takeIf { it.isNotBlank() }
+        )
     }
 
     LaunchedEffect(defaultFrom) {
@@ -310,7 +316,21 @@ fun MainScreen(
                             }
 
                             val detectedCurrency = scanCurrency
-                            if (scanCurrencyConfident && !detectedCurrency.isNullOrBlank()) {
+                            val detectedSource = scanCurrencySource
+                            if (!detectedCurrency.isNullOrBlank() && detectedSource != null) {
+                                val isInferred = detectedSource != CurrencySource.OCR_EXPLICIT &&
+                                    detectedSource != CurrencySource.OCR_SYMBOL
+                                val detectedLabel = if (isInferred) {
+                                    stringResource(
+                                        R.string.main_detected_currency_inferred,
+                                        detectedCurrency
+                                    )
+                                } else {
+                                    stringResource(
+                                        R.string.main_detected_currency,
+                                        detectedCurrency
+                                    )
+                                }
                                 Surface(
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
@@ -320,10 +340,7 @@ fun MainScreen(
                                     tonalElevation = 2.dp
                                 ) {
                                     Text(
-                                        text = stringResource(
-                                            R.string.main_detected_currency,
-                                            detectedCurrency
-                                        ),
+                                        text = detectedLabel,
                                         style = MaterialTheme.typography.labelLarge,
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                         color = MaterialTheme.colorScheme.onSurfaceVariant

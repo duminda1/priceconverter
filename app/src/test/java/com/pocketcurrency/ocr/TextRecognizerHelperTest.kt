@@ -17,6 +17,7 @@ class TextRecognizerHelperTest {
     fun recognizeText_returnsTextFromRecognizer() = runTest {
         val textResult = mockk<Text>()
         every { textResult.text } returns "Sample text"
+        every { textResult.textBlocks } returns emptyList()
         val recognizer = mockk<TextRecognizer>()
         val inputImage = mockk<InputImage>()
 
@@ -28,6 +29,13 @@ class TextRecognizerHelperTest {
 
         assertEquals("Sample text", result)
         verify(exactly = 1) { recognizer.process(inputImage) }
+    }
+
+    @Test
+    fun formatRecognizedText_aggregatesTextBlocks() {
+        val result = formatRecognizedText("Ignored", listOf("Total", "12.50"))
+
+        assertEquals("Total\n12.50", result)
     }
 
     @Test
