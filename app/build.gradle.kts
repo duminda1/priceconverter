@@ -3,12 +3,10 @@ import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
 
     alias(libs.plugins.firebase.appdistribution)
 
-    id("com.google.dagger.hilt.android")
     id("kotlin-kapt")
     id("jacoco")
 }
@@ -69,6 +67,10 @@ android {
     buildFeatures {
         buildConfig = true
         compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.15"
     }
 
     lint {

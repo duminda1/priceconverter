@@ -222,6 +222,7 @@ class SettingsViewModel @Inject constructor(
             var refreshedCount = 0
             var lastWarning: String? = null
             var firstError: String? = null
+            val error = firstError
 
             savedRates.forEach { rate ->
                 val result = rateUpdateRepository.fetchRate(
@@ -251,7 +252,7 @@ class SettingsViewModel @Inject constructor(
                     R.string.status_refreshed_saved_rates_with_error,
                     refreshedCount,
                     savedRates.size,
-                    firstError
+                    error as String
                 )
             }
 
