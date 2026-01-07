@@ -1,5 +1,30 @@
 import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 
+// Release pins must be injected via -P... or environment variables in CI.
+// Required CI inputs: EXCHANGE_RATE_API_PINS and FRANKFURTER_API_PINS (CSV of sha256 pins).
+val exchangeRatePinsProvider = providers.gradleProperty("EXCHANGE_RATE_API_PINS")
+    .orElse(providers.environmentVariable("EXCHANGE_RATE_API_PINS"))
+val frankfurterPinsProvider = providers.gradleProperty("FRANKFURTER_API_PINS")
+    .orElse(providers.environmentVariable("FRANKFURTER_API_PINS"))
+
+// Firebase App Distribution uploads require FIREBASE_APP_ID in CI.
+val firebaseAppIdProvider = providers.gradleProperty("FIREBASE_APP_ID")
+    .orElse(providers.environmentVariable("FIREBASE_APP_ID"))
+
+val keystorePathProvider = providers.environmentVariable("KEYSTORE_PATH")
+val keystorePasswordProvider = providers.environmentVariable("KEYSTORE_PASSWORD")
+val keyAliasProvider = providers.environmentVariable("KEY_ALIAS")
+val keyPasswordProvider = providers.environmentVariable("KEY_PASSWORD")
+val hasReleaseSigning = keystorePathProvider.isPresent &&
+    keystorePasswordProvider.isPresent &&
+    keyAliasProvider.isPresent &&
+    keyPasswordProvider.isPresent
+
+fun buildConfigString(value: String): String {
+    val escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
+    return "\"$escaped\""
+}
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -16,12 +41,23 @@ android {
     namespace = "com.pocketcurrency"
     compileSdk = 35
 
+    signingConfigs {
+        create("release") {
+            if (hasReleaseSigning) {
+                storeFile = file(keystorePathProvider.get())
+                storePassword = keystorePasswordProvider.get()
+                keyAlias = keyAliasProvider.get()
+                keyPassword = keyPasswordProvider.get()
+            }
+        }
+    }
+
     defaultConfig {
         applicationId = "com.pocketcurrency"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.2"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Pinning config: CSV lists of sha256 pins. Keep current + next for overlap.
         // Remote config can override when PREFS_PIN_CONFIG_VERSION >= PIN_CONFIG_VERSION.
@@ -35,23 +71,40 @@ android {
         enableUnitTestCoverage = true
         firebaseAppDistribution {
             releaseNotes = "PocketCurrency beta – offline rates & camera scan"
+            appId = firebaseAppIdProvider.orNull?.trim().orEmpty()
+            artifactType = "APK"
          }
        }   
 
         release {
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
-            // TODO(security): Add next pins and bump PIN_CONFIG_VERSION before 2026-02-01.
+ 
+            firebaseAppDistribution {
+                releaseNotes = "PocketCurrency beta – offline rates & camera scan"
+                appId = firebaseAppIdProvider.orNull?.trim().orEmpty()
+                artifactType = "APK"
+            }
+
+            // R8 mapping is required for Play Console crash de-obfuscation.
+            // Mapping output: app/build/outputs/mapping/release/mapping.txt
+            // TODO(security): Update CI pin values and bump PIN_CONFIG_VERSION before 2026-02-01.
             // Keep current + next pins to avoid outages during certificate rotation.
+            val releaseExchangeRatePins = exchangeRatePinsProvider.orNull?.trim().orEmpty()
+            val releaseFrankfurterPins = frankfurterPinsProvider.orNull?.trim().orEmpty()
+            // Release pins must be injected via CI (-P... or env vars) and non-empty.
             buildConfigField(
                 "String",
                 "EXCHANGE_RATE_API_PINS",
-                "\"sha256/vzYXzoQOSpsEdzn3ONdvLgUwlIApQnxmTMtploslE/8=,sha256/kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=\""
+                buildConfigString(releaseExchangeRatePins)
             )
             buildConfigField(
                 "String",
                 "FRANKFURTER_API_PINS",
-                "\"sha256/D8//K9pEwUhq04zJsf6nBegYSLQV+XLnbR8qAOq6dtc=,sha256/kIdp6NNEd8wsugYyyIYFsi1ylMCED3hZbSR8ZFsa/A4=\""
+                buildConfigString(releaseFrankfurterPins)
             )
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -82,6 +135,67 @@ android {
         abortOnError = true
         lintConfig = file("lint.xml")
         checkReleaseBuilds = true
+    }
+}
+
+val verifyReleasePinConfig = tasks.register("verifyReleasePinConfig") {
+    doLast {
+        val exchangePins = exchangeRatePinsProvider.orNull?.trim().orEmpty()
+        val frankfurterPins = frankfurterPinsProvider.orNull?.trim().orEmpty()
+        if (exchangePins.isEmpty() || frankfurterPins.isEmpty()) {
+            throw GradleException(
+                "Release builds require EXCHANGE_RATE_API_PINS and FRANKFURTER_API_PINS. " +
+                    "Set them via -P or environment variables in CI."
+            )
+        }
+    }
+}
+
+val verifyFirebaseAppId = tasks.register("verifyFirebaseAppId") {
+    doLast {
+        val appId = firebaseAppIdProvider.orNull?.trim().orEmpty()
+        if (appId.isEmpty()) {
+            throw GradleException(
+                "Firebase App Distribution uploads require FIREBASE_APP_ID. " +
+                    "Set it via -P or environment variables in CI."
+            )
+        }
+    }
+}
+
+tasks.matching {
+    it.name in setOf(
+        "preReleaseBuild",
+        "assembleRelease",
+        "bundleRelease",
+        "appDistributionUploadRelease"
+    )
+}.configureEach {
+    dependsOn(verifyReleasePinConfig)
+}
+
+tasks.matching {
+    it.name in setOf(
+        "appDistributionUploadDebug",
+        "appDistributionUploadRelease"
+    )
+}.configureEach {
+    dependsOn(verifyFirebaseAppId)
+}
+
+val archiveReleaseMapping = tasks.register<Copy>("archiveReleaseMapping") {
+    // Keep a stable mapping.txt location for Play Console de-obfuscation uploads.
+    // CI should archive app/build/outputs/mapping-archive/release/mapping.txt.
+    val mappingFile = layout.buildDirectory.file("outputs/mapping/release/mapping.txt")
+    from(mappingFile)
+    into(layout.buildDirectory.dir("outputs/mapping-archive/release"))
+    rename { "mapping.txt" }
+    doFirst {
+        if (!mappingFile.get().asFile.exists()) {
+            throw GradleException(
+                "mapping.txt not found. Run :app:bundleRelease or :app:assembleRelease first."
+            )
+        }
     }
 }
 
