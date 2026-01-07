@@ -11,6 +11,15 @@ val frankfurterPinsProvider = providers.gradleProperty("FRANKFURTER_API_PINS")
 val firebaseAppIdProvider = providers.gradleProperty("FIREBASE_APP_ID")
     .orElse(providers.environmentVariable("FIREBASE_APP_ID"))
 
+val keystorePathProvider = providers.environmentVariable("KEYSTORE_PATH")
+val keystorePasswordProvider = providers.environmentVariable("KEYSTORE_PASSWORD")
+val keyAliasProvider = providers.environmentVariable("KEY_ALIAS")
+val keyPasswordProvider = providers.environmentVariable("KEY_PASSWORD")
+val hasReleaseSigning = keystorePathProvider.isPresent &&
+    keystorePasswordProvider.isPresent &&
+    keyAliasProvider.isPresent &&
+    keyPasswordProvider.isPresent
+
 fun buildConfigString(value: String): String {
     val escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
     return "\"$escaped\""
@@ -34,10 +43,12 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file(System.getenv("KEYSTORE_PATH"))
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
+            if (hasReleaseSigning) {
+                storeFile = file(keystorePathProvider.get())
+                storePassword = keystorePasswordProvider.get()
+                keyAlias = keyAliasProvider.get()
+                keyPassword = keyPasswordProvider.get()
+            }
         }
     }
 
@@ -66,7 +77,9 @@ android {
        }   
 
         release {
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
  

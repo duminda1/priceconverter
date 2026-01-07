@@ -5,20 +5,20 @@ https://github.com/duminda1/priceconverter/actions/workflows/android.yml)
 # PocketCurrency  
 **Instant currency conversion for travellers**
 
-PocketCurrency is a traveller-friendly Android app that helps you quickly understand what prices really cost in your own currency — online or offline.
+PocketCurrency is a traveller-friendly Android app that helps you quickly understand what prices really cost in your own currency, online or offline.
 
-Designed for non-technical users, PocketCurrency works anywhere in the world, supports saved and manual rates, and includes camera-based price scanning for fast conversions while travelling.
+Designed for non-technical users, PocketCurrency works anywhere in the world with saved and manual rates, optional realtime updates, and camera-based price scanning for fast conversions while travelling.
 
 ---
 
 ## Features
 
-- Quick currency conversion
-- Automatic price updates (optional)
-- Offline support using saved or manual rates
-- Camera-based price scanning
-- Clear rate source indicators (Live / Saved / Manual)
-- Simple, travel-friendly user interface
+- Manual price conversion with quick currency swap
+- Saved rate pairs for offline use, with refresh controls
+- Manual offline rates for full control
+- Camera-based live scan (OCR) with currency detection
+- Rate service selection: Frankfurter daily updates or Custom API (exchangerate.host)
+- Realtime toggle, rate-source indicators, and API usage alerts
 
 ---
 
@@ -27,7 +27,7 @@ Designed for non-technical users, PocketCurrency works anywhere in the world, su
 ### Requirements
 
 - Android Studio (latest stable version)
-- Android SDK 26 or higher
+- Android SDK 35
 - Kotlin
 - Android Emulator or a physical Android device
 
@@ -36,15 +36,15 @@ Designed for non-technical users, PocketCurrency works anywhere in the world, su
 ### Clone the Repository
 
 ```bash
-git clone https://github.com/duminda1/PocketCurrency.git
-cd PocketCurrency
+git clone https://github.com/duminda1/priceconverter.git
+cd priceconverter
 ```
 
 ## Open in Android Studio
 
 1. Open Android Studio
 2. Select **Open**
-3. Choose the `PocketCurrency` project directory
+3. Choose the `priceconverter` project directory
 4. Wait for the Gradle sync to complete
 
 ---
@@ -68,16 +68,17 @@ cd PocketCurrency
 
 ---
 
-## Price Updates (Optional)
+## Rate Services and Updates (Optional)
 
-PocketCurrency works without internet access using saved or manual rates.
+PocketCurrency works without internet access using saved or manual rates. To enable automatic updates:
 
-To enable automatic price updates:
-
-1. Open **Settings**
-2. Go to **Rate service**
-3. Use the built-in Frankfurter service (recommended, no API key, daily updates around 16:00 CET), or
-4. Choose Advanced: Custom API (exchangerate.host) and add your own API key (realtime support)
+1. Open **Settings -> Rate service**
+2. Choose a provider:
+   - Frankfurter (default): daily rates around 16:00 CET, no API key
+   - Advanced: Custom API (exchangerate.host): realtime updates with your API key
+3. For realtime conversions, enable the **Realtime** toggle on the main screen.
+4. Saved pairs can be fetched or refreshed in **Settings -> Saved for offline use**.
+5. The Advanced provider shows usage and optional alerts for the free plan (100 requests/month).
 
 ---
 
@@ -91,13 +92,42 @@ To enable automatic price updates:
 4. Tap **Convert**
 5. View the converted amount and rate information
 
+Tip: Use the swap button between the currency fields to flip them quickly.
+
 ---
 
 ### Scan a Price Using the Camera
 
-1. Enable **Scan**
-2. Point your camera at a price
-3. PocketCurrency automatically detects and converts the value
+1. Enable **Scan** on the main screen
+2. Allow camera permission when prompted
+3. If prompted, connect once to download the OCR model (Google Play services required)
+4. Point your camera at a price
+5. PocketCurrency automatically detects and converts the value
+
+---
+
+### Save a Rate for Offline Use
+
+1. Open **Settings -> Saved for offline use**
+2. Enter the **From** and **To** currencies
+3. Tap **Fetch & Save**
+4. Use **Refresh all** when you are online to update saved pairs
+
+---
+
+### Add a Manual Offline Rate
+
+1. Open **Settings -> Offline rates**
+2. Enter the **From** and **To** currencies and the rate
+3. Tap **Save rate**
+
+---
+
+### Home & Destination Defaults
+
+- Home currency is the default **To** currency
+- Destination currency is the default **From** currency
+- Auto-detect uses your device region or locale and can be overridden in **Settings**
 
 ---
 
@@ -107,18 +137,21 @@ PocketCurrency is designed for travel and works without internet access:
 
 - Saved rates are used automatically
 - Manual rates can be entered by the user
-- The app shows when a rate was last updated
+- Live scan works after the OCR model is downloaded
+- The app shows when a rate was last updated and if it looks stale
 
 ---
 
 ## Help & Support
 
-### Live vs Saved vs Manual Rates
+### Live vs Saved vs Offline Rates
 
-- **Live**: Updated automatically when internet is available
-- **Saved**: Last known rate stored on the device
-- **Manual**: A rate entered by the user
+- **Live updates**: Realtime conversions from Custom API with **Realtime** enabled
+- **Saved**: Rates you fetched and stored for offline use
+- **Offline**: Manual rates you enter yourself
 
+When realtime is enabled and supported, PocketCurrency tries **Live -> Saved -> Offline**.
+Otherwise, it uses **Saved -> Offline**.
 The current rate source and last update time are always visible in the app.
 
 ---
@@ -128,17 +161,18 @@ The current rate source and last update time are always visible in the app.
 PocketCurrency can automatically update exchange rates using an online price update service.
 
 - The default service is Frankfurter (no API key required)
-- Frankfurter updates once per day around 16:00 CET
-- Advanced users can switch to exchangerate.host (requires an API key) for realtime updates and usage tracking
+- Frankfurter updates once per day around 16:00 CET and refreshes saved pairs when you are online
+- Advanced users can switch to Custom API (exchangerate.host) for realtime updates and usage tracking
 
 To use your own service (exchangerate.host):
 
-1. Open **Settings → Rate service** and select **Advanced: Custom API (exchangerate.host)**
+1. Open **Settings -> Rate service** and select **Advanced: Custom API (exchangerate.host)**
 2. Visit https://exchangerate.host/signup/free
 3. Create a free account
 4. Copy your API key
-5. Paste it into **Settings → API access**
+5. Paste it into **Settings -> API access**
 6. Tap **Verify & Save** to confirm the key
+7. Enable **Realtime** on the main screen
 
 If the service is unavailable or the key is invalid, PocketCurrency continues using saved or manual rates.
 
