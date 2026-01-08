@@ -33,4 +33,11 @@ class ScanRepository @Inject constructor() {
         _scanCurrencyConfidence.value = currencyConfidence
         _scanCurrencySource.value = currencySource
     }
+
+    fun clearScan() {
+        _scanAmount.value = null
+        _scanCurrency.value = null
+        _scanCurrencyConfidence.value = null
+        _scanCurrencySource.value = null
+    }
 }

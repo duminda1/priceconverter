@@ -4,6 +4,7 @@ import androidx.camera.core.ImageProxy
 import com.google.mlkit.vision.common.InputImage
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Locale
@@ -68,13 +69,21 @@ class LiveScanCoordinator(
                 if (detected != null) {
                     onDetected(detected)
                 }
+                ocrThrottle.onComplete()
+            } catch (e: CancellationException) {
+                ocrThrottle.onAbort()
             } catch (e: Exception) {
                 onError(e)
-            } finally {
                 ocrThrottle.onComplete()
+            } finally {
                 imageProxy.close()
             }
         }
+    }
+
+    fun resetSession() {
+        ocrThrottle.onAbort()
+        priceStabilizer.reset()
     }
 
     override fun close() {

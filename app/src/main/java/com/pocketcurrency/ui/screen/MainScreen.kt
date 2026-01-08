@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.text.KeyboardOptions
@@ -55,6 +56,7 @@ import com.pocketcurrency.viewmodel.MainSettingsViewModel
 import com.pocketcurrency.viewmodel.OcrReadiness
 import com.pocketcurrency.viewmodel.OcrUnavailableReason
 import com.pocketcurrency.viewmodel.ScanViewModel
+import com.pocketcurrency.viewmodel.LiveScanUiState
 import com.pocketcurrency.domain.model.ServiceStatusType
 import com.pocketcurrency.util.Constants
 import com.pocketcurrency.util.AmountInputFormatter
@@ -87,6 +89,7 @@ fun MainScreen(
     val scanCurrency by scanViewModel.scanCurrency.collectAsState()
     val scanCurrencySource by scanViewModel.scanCurrencySource.collectAsState()
     val ocrReadiness by scanViewModel.ocrReadiness.collectAsState()
+    val scanUiState by scanViewModel.scanUiState.collectAsState()
 
     val realtimeEnabled = settingsState.realtimeEnabled
     val serviceReady = settingsState.serviceReady
@@ -119,16 +122,21 @@ fun MainScreen(
     val canConvert = manualRateAvailable || savedRateAvailable || canUseRealtime
     val showRealtimeHelper = !realtimeEnabled || !canUseRealtime
     val amountValue = AmountInputFormatter.parseInput(amountInput)
+    val amountInputInvalid = amountInput.isNotBlank() && amountValue == null
     val convertEnabled =
         amountValue != null && normalizedFrom.isNotBlank() && normalizedTo.isNotBlank()
     val ocrReady = ocrReadiness is OcrReadiness.Ready
-    val shouldStartCamera = liveScanEnabled && hasCameraPermission && ocrReady
+    val isScanning = scanUiState is LiveScanUiState.Scanning
+    val scanResult = scanUiState as? LiveScanUiState.Result
+    val shouldStartCamera = isScanning && liveScanEnabled && hasCameraPermission && ocrReady
     val showCameraHint = shouldStartCamera && scanAmount == null
     val convertLabel = stringResource(R.string.action_convert)
     val fromLabel = stringResource(R.string.main_currency_from_label)
     val toLabel = stringResource(R.string.main_currency_to_label)
     val fromPlaceholder = stringResource(R.string.main_currency_from_placeholder)
     val toPlaceholder = stringResource(R.string.main_currency_to_placeholder)
+    val realtimeHint = stringResource(R.string.main_realtime_hint)
+    val scanHint = stringResource(R.string.main_scan_hint)
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember(context) { PreviewView(context) }
 
@@ -142,10 +150,13 @@ fun MainScreen(
         cameraPermissionUiState =
             cameraPermissionUiStateForResult(isGranted, shouldShowRationale)
         settingsViewModel.setLiveScanEnabled(isGranted)
+        if (!isGranted) {
+            scanViewModel.stopLiveScan()
+        }
     }
 
     LaunchedEffect(liveScanEnabled, hasCameraPermission) {
-        scanViewModel.setLiveScanActive(liveScanEnabled, hasCameraPermission)
+        scanViewModel.updateLiveScanAvailability(liveScanEnabled, hasCameraPermission)
     }
 
     LaunchedEffect(lifecycleOwner) {
@@ -208,13 +219,15 @@ fun MainScreen(
             MaterialTheme.colorScheme.background
         )
     )
-    // Soft reassurance accent for offline/saved cues.
-    val reassuranceColor = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.9f)
+    val sectionHeaderStyle =
+        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+    val helperTextStyle = MaterialTheme.typography.bodySmall
+    val helperTextColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Scaffold(
         containerColor = Color.Transparent,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.app_name)) },
                 actions = {
                     TextButton(
@@ -246,7 +259,27 @@ fun MainScreen(
             val isLandscape = maxWidth > maxHeight
             val isTablet = maxWidth >= 600.dp
             val useSideBySide = isTablet || isLandscape
-            val cameraAspectRatio = if (isLandscape) 16f / 9f else 4f / 3f
+            val baseCameraAspectRatio = if (isLandscape) 16f / 9f else 4f / 3f
+            val cameraHeightScale = if (useSideBySide) {
+                1f
+            } else if (shouldStartCamera) {
+                0.4f
+            } else {
+                0.6f
+            }
+            val cameraAspectRatio = baseCameraAspectRatio / cameraHeightScale
+            val cameraMinHeight = if (useSideBySide) {
+                0.dp
+            } else if (shouldStartCamera) {
+                120.dp
+            } else {
+                160.dp
+            }
+            val cameraHeightModifier = if (useSideBySide) {
+                Modifier
+            } else {
+                Modifier.heightIn(min = cameraMinHeight)
+            }
             // Split on tablets (and wide landscapes) to use horizontal space effectively.
             val cameraWeight = when {
                 isTablet -> 1.1f
@@ -348,6 +381,13 @@ fun MainScreen(
                                 }
                             }
                         }
+                    } else if (scanResult != null) {
+                        ScanResultCard(
+                            amount = scanResult.amount,
+                            currencyCode = scanResult.currencyCode,
+                            onScanAgain = { scanViewModel.startLiveScan() },
+                            onEnterManually = { scanViewModel.stopLiveScan() }
+                        )
                     } else if (permissionCardState.show &&
                         permissionCardState.state != CameraPermissionUiState.Off
                     ) {
@@ -408,6 +448,7 @@ fun MainScreen(
                                 if (liveScanEnabled) {
                                     settingsViewModel.setLiveScanEnabled(false)
                                 }
+                                scanViewModel.stopLiveScan()
                             }
                         )
                     } else if (liveScanEnabled && hasCameraPermission) {
@@ -455,12 +496,15 @@ fun MainScreen(
                                     primaryActionLabel = primaryLabel,
                                     onPrimaryAction = onPrimaryAction,
                                     secondaryActionLabel = stringResource(R.string.action_not_now),
-                                    onSecondaryAction = { settingsViewModel.setLiveScanEnabled(false) }
+                                    onSecondaryAction = {
+                                        settingsViewModel.setLiveScanEnabled(false)
+                                        scanViewModel.stopLiveScan()
+                                    }
                                 )
                             }
                             OcrReadiness.Ready -> {
-                                OcrStatusPrompt(
-                                    message = stringResource(R.string.main_ocr_ready)
+                                StartLiveScanCard(
+                                    onStart = { scanViewModel.startLiveScan() }
                                 )
                             }
                         }
@@ -473,12 +517,12 @@ fun MainScreen(
                         ) {
                             Text(
                                 stringResource(R.string.main_live_scan_off_title),
-                                style = MaterialTheme.typography.titleMedium
+                                style = sectionHeaderStyle
                             )
                             Text(
                                 stringResource(R.string.main_live_scan_off_subtitle),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = helperTextStyle,
+                                color = helperTextColor
                             )
                         }
                     }
@@ -488,7 +532,7 @@ fun MainScreen(
             val contentColumn: @Composable (Modifier, Boolean) -> Unit = { modifier, anchorControls ->
                 Column(
                     modifier = modifier,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     val manualEntryCard: @Composable () -> Unit = {
                         Card(
@@ -504,7 +548,7 @@ fun MainScreen(
                             ) {
                                 Text(
                                     stringResource(R.string.main_manual_entry_title),
-                                    style = MaterialTheme.typography.titleMedium
+                                    style = sectionHeaderStyle
                                 )
 
                                 val amountFieldMinHeight = 56.dp
@@ -522,6 +566,11 @@ fun MainScreen(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .heightIn(min = amountFieldMinHeight),
+                                    isError = amountInputInvalid,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        errorBorderColor =
+                                            MaterialTheme.colorScheme.error.copy(alpha = 0.85f)
+                                    ),
                                     shape = RoundedCornerShape(14.dp)
                                 )
 
@@ -588,12 +637,14 @@ fun MainScreen(
                                     },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .heightIn(min = 48.dp)
+                                        .heightIn(min = 44.dp)
                                         .semantics { contentDescription = convertLabel },
                                     shape = RoundedCornerShape(14.dp),
                                     colors = ButtonDefaults.buttonColors(
                                         containerColor = MaterialTheme.colorScheme.primary,
-                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                                     ),
                                     enabled = convertEnabled
                                 ) {
@@ -607,8 +658,8 @@ fun MainScreen(
                                     }
                                     Text(
                                         noRatesMessage,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        style = helperTextStyle,
+                                        color = helperTextColor
                                     )
                                 }
                             }
@@ -630,9 +681,9 @@ fun MainScreen(
                                     ) {
                                         Text(
                                             stringResource(R.string.main_waiting_price),
-                                            style = MaterialTheme.typography.bodyMedium,
+                                            style = helperTextStyle,
                                             modifier = Modifier.padding(12.dp),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = helperTextColor
                                         )
                                     }
                                 }
@@ -648,7 +699,7 @@ fun MainScreen(
                                         ) {
                                             Text(
                                                 stringResource(R.string.main_converting),
-                                                style = MaterialTheme.typography.titleMedium
+                                                style = sectionHeaderStyle
                                             )
                                             LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                                         }
@@ -662,36 +713,31 @@ fun MainScreen(
                                             val statusLabel = serviceStatusLabel(status.type)
                                             val relativeUpdated =
                                                 formatRelativeUpdated(status.lastUpdatedAtMillis)
-                                            val labelColor =
-                                                if (status.type == ServiceStatusType.LIVE) {
-                                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                                } else {
-                                                    reassuranceColor
-                                                }
+                                            val statusTextColor = helperTextColor
                                             Row(
                                                 verticalAlignment = Alignment.CenterVertically,
                                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                                             ) {
                                                 Text(
                                                     text = statusLabel,
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = labelColor
+                                                    style = helperTextStyle,
+                                                    color = statusTextColor
                                                 )
                                                 Text(
                                                     text = stringResource(
                                                         R.string.main_status_updated,
                                                         relativeUpdated
                                                     ),
-                                                    style = MaterialTheme.typography.bodyMedium,
-                                                    color = reassuranceColor
+                                                    style = helperTextStyle,
+                                                    color = statusTextColor
                                                 )
                                                 if (status.isStale) {
                                                     Text(
                                                         text = stringResource(
                                                             R.string.main_status_stale
                                                         ),
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        color = MaterialTheme.colorScheme.error
+                                                        style = helperTextStyle,
+                                                        color = helperTextColor
                                                     )
                                                 }
                                                 IconButton(
@@ -725,13 +771,17 @@ fun MainScreen(
                                                         verticalArrangement = Arrangement.spacedBy(8.dp)
                                                     ) {
                                                         Text(
-                                                            stringResource(R.string.main_rate_info_body)
+                                                            stringResource(R.string.main_rate_info_body),
+                                                            style = helperTextStyle,
+                                                            color = helperTextColor
                                                         )
                                                         if (serviceStatus?.isStale == true) {
                                                             Text(
                                                                 stringResource(
                                                                     R.string.main_rate_info_stale
-                                                                )
+                                                                ),
+                                                                style = helperTextStyle,
+                                                                color = helperTextColor
                                                             )
                                                         }
                                                     }
@@ -749,9 +799,9 @@ fun MainScreen(
                                     ) {
                                         Text(
                                             (conversionState as ConversionState.Error).message,
-                                            style = MaterialTheme.typography.bodyMedium,
+                                            style = helperTextStyle,
                                             modifier = Modifier.padding(12.dp),
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            color = helperTextColor
                                         )
                                     }
                                 }
@@ -775,49 +825,81 @@ fun MainScreen(
                             ) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.Top
                                 ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                stringResource(R.string.main_realtime_label),
+                                                style = MaterialTheme.typography.labelSmall
+                                            )
+                                            Switch(
+                                                modifier = Modifier.scale(0.85f),
+                                                checked = realtimeEnabled,
+                                                onCheckedChange = {
+                                                    settingsViewModel.setRealtimeEnabled(it)
+                                                },
+                                                enabled = canUseRealtime
+                                            )
+                                        }
                                         Text(
-                                            stringResource(R.string.main_realtime_label),
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Switch(
-                                            modifier = Modifier.scale(0.85f),
-                                            checked = realtimeEnabled,
-                                            onCheckedChange = { settingsViewModel.setRealtimeEnabled(it) },
-                                            enabled = canUseRealtime
+                                            realtimeHint,
+                                            style = helperTextStyle,
+                                            color = helperTextColor
                                         )
                                     }
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Text(
-                                            stringResource(R.string.main_scan_label),
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Switch(
-                                            modifier = Modifier.scale(0.85f),
-                                            checked = liveScanEnabled,
-                                            onCheckedChange = { enabled ->
-                                                if (enabled) {
-                                                    if (hasCameraPermission) {
-                                                        settingsViewModel.setLiveScanEnabled(true)
-                                                        cameraPermissionUiState =
-                                                            CameraPermissionUiState.Off
+                                    Column(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                stringResource(R.string.main_scan_label),
+                                                style = MaterialTheme.typography.labelSmall
+                                            )
+                                            Switch(
+                                                modifier = Modifier.scale(0.85f),
+                                                checked = liveScanEnabled,
+                                                onCheckedChange = { enabled ->
+                                                    if (enabled) {
+                                                        if (hasCameraPermission) {
+                                                            settingsViewModel.setLiveScanEnabled(true)
+                                                            cameraPermissionUiState =
+                                                                CameraPermissionUiState.Off
+                                                            scanViewModel.startLiveScan()
+                                                        } else {
+                                                            settingsViewModel.setLiveScanEnabled(false)
+                                                            cameraPermissionUiState =
+                                                                nextCameraPermissionUiStateOnEnableAttempt(
+                                                                    cameraPermissionUiState
+                                                                )
+                                                            scanViewModel.startLiveScan()
+                                                        }
                                                     } else {
                                                         settingsViewModel.setLiveScanEnabled(false)
                                                         cameraPermissionUiState =
-                                                            nextCameraPermissionUiStateOnEnableAttempt(
-                                                                cameraPermissionUiState
-                                                            )
+                                                            CameraPermissionUiState.Off
+                                                        scanViewModel.stopLiveScan()
                                                     }
-                                                } else {
-                                                    settingsViewModel.setLiveScanEnabled(false)
-                                                    cameraPermissionUiState = CameraPermissionUiState.Off
                                                 }
-                                            }
+                                            )
+                                        }
+                                        Text(
+                                            scanHint,
+                                            style = helperTextStyle,
+                                            color = helperTextColor
                                         )
                                     }
                                 }
@@ -841,12 +923,7 @@ fun MainScreen(
                                         is OcrReadiness.Unavailable ->
                                             stringResource(R.string.main_ocr_unavailable_short)
                                     }
-                                    val ocrStatusColor =
-                                        if (ocrReadiness is OcrReadiness.Unavailable) {
-                                            MaterialTheme.colorScheme.error
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurfaceVariant
-                                        }
+                                    val ocrStatusColor = helperTextColor
                                     Text(
                                         ocrStatusText,
                                         style = MaterialTheme.typography.bodySmall,
@@ -859,7 +936,7 @@ fun MainScreen(
                     }
 
                     if (anchorControls) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                             manualEntryCard()
                             conversionCard()
                         }
@@ -883,6 +960,7 @@ fun MainScreen(
                         Modifier
                             .weight(cameraWeight)
                             .aspectRatio(cameraAspectRatio)
+                            .then(cameraHeightModifier)
                     )
                     contentColumn(
                         Modifier
@@ -895,13 +973,14 @@ fun MainScreen(
             } else {
                 Column(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     cameraCard(
                         Modifier
                             .fillMaxWidth()
-                            // Responsive camera sizing without fixed heights.
+                            // Keep the camera assistive while preserving room for prompts.
                             .aspectRatio(cameraAspectRatio)
+                            .then(cameraHeightModifier)
                     )
                     contentColumn(
                         Modifier
@@ -929,11 +1008,98 @@ private fun CameraHintOverlay(
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
             textAlign = TextAlign.Center,
             modifier = Modifier.align(Alignment.Center)
         )
+    }
+}
+
+@Composable
+private fun StartLiveScanCard(
+    onStart: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = stringResource(R.string.main_live_scan_ready_title),
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.main_live_scan_ready_body),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = onStart,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(R.string.action_start_live_scan))
+        }
+    }
+}
+
+@Composable
+private fun ScanResultCard(
+    amount: Double?,
+    currencyCode: String?,
+    onScanAgain: () -> Unit,
+    onEnterManually: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val normalizedCurrency = currencyCode?.trim()?.uppercase()
+    val formattedAmount = amount?.let { AmountInputFormatter.formatAmount(it) }
+    val resultText = when {
+        formattedAmount == null -> stringResource(R.string.main_scan_result_empty)
+        !normalizedCurrency.isNullOrBlank() -> stringResource(
+            R.string.main_scan_result_amount_with_currency,
+            formattedAmount,
+            normalizedCurrency
+        )
+        else -> stringResource(R.string.main_scan_result_amount, formattedAmount)
+    }
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(20.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = resultText,
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onEnterManually,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.action_enter_manually))
+            }
+            Button(
+                onClick = onScanAgain,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(stringResource(R.string.action_scan_again))
+            }
+        }
     }
 }
 
@@ -956,13 +1122,13 @@ private fun CameraPermissionPrompt(
     ) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             textAlign = TextAlign.Center
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = message,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
@@ -1008,14 +1174,14 @@ private fun OcrStatusPrompt(
         if (!title.isNullOrBlank()) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))
         }
         Text(
             text = message,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )

@@ -6,6 +6,9 @@
     <string name="action_allow_camera">Allow camera</string>
     <string name="action_try_again">Try again</string>
     <string name="action_download_ocr_model">Download model</string>
+    <string name="action_start_live_scan">Start live scan</string>
+    <string name="action_scan_again">Scan again</string>
+    <string name="action_enter_manually">Enter manually</string>
     <string name="action_open_settings">Open settings</string>
     <string name="action_not_now">Not now</string>
     <string name="content_swap_currencies">Swap currencies</string>
@@ -14,6 +17,11 @@
     <string name="content_currency_selector_description">%1$s currency selector</string>
     <string name="main_camera_hint">Looking for prices...</string>
     <string name="main_live_scan_label">Live scan</string>
+    <string name="main_live_scan_ready_title">Ready to scan</string>
+    <string name="main_live_scan_ready_body">Camera stays off until you start.</string>
+    <string name="main_scan_result_empty">No price detected</string>
+    <string name="main_scan_result_amount">Captured %1$s</string>
+    <string name="main_scan_result_amount_with_currency">Captured %1$s %2$s</string>
     <string name="main_detected_currency">Detected %1$s</string>
     <string name="main_detected_currency_inferred">Detected %1$s (inferred)</string>
     <string name="main_ocr_ready">OCR ready</string>
@@ -27,7 +35,7 @@
     <string name="main_live_scan_off_title">Live scan is off</string>
     <string name="main_live_scan_off_subtitle">Enable it from the toggle below or in Settings.</string>
     <string name="main_camera_permission_title">Enable camera access</string>
-    <string name="main_camera_permission_body">We use the camera to scan prices so you can convert faster.</string>
+    <string name="main_camera_permission_body">We only use the camera to scan prices — nothing is saved or uploaded.</string>
     <string name="main_camera_permission_denied_title">Camera access denied</string>
     <string name="main_camera_permission_denied_body">To use live scan, allow camera access.</string>
     <string name="main_camera_permission_blocked_title">Camera access blocked</string>
@@ -52,6 +60,8 @@
     <string name="main_rate_info_body">PocketCurrency keeps working even without internet using saved rates.</string>
     <string name="main_realtime_label">Realtime</string>
     <string name="main_scan_label">Scan</string>
+    <string name="main_realtime_hint">Auto refresh rates</string>
+    <string name="main_scan_hint">Use camera</string>
     <string name="main_realtime_helper">Realtime updates require internet access and a supported rate service.</string>
     <string name="error_invalid_currency_codes">Enter valid currency codes.</string>
     <string name="error_invalid_manual_rate">Enter a rate greater than 0.</string>
