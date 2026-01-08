@@ -57,7 +57,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.2"
+        versionName = "1.3"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Pinning config: CSV lists of sha256 pins. Keep current + next for overlap.
         // Remote config can override when PREFS_PIN_CONFIG_VERSION >= PIN_CONFIG_VERSION.
@@ -165,7 +165,6 @@ val verifyFirebaseAppId = tasks.register("verifyFirebaseAppId") {
 
 tasks.matching {
     it.name in setOf(
-        "preReleaseBuild",
         "assembleRelease",
         "bundleRelease",
         "appDistributionUploadRelease"

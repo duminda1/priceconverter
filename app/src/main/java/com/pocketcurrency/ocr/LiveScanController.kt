@@ -144,6 +144,10 @@ class LiveScanController(
                 executor,
                 object : ImageAnalysis.Analyzer {
                     override fun analyze(imageProxy: ImageProxy) {
+                        if (startSessionId != sessionId) {
+                            imageProxy.close()
+                            return
+                        }
                         val scope = analysisScope
                         if (scope == null) {
                             imageProxy.close()
@@ -188,6 +192,7 @@ class LiveScanController(
         analysisScope?.cancel()
         analysisScope = null
         isBound = false
+        coordinator.resetSession()
 
         cameraProviderFuture.addListener({
             try {

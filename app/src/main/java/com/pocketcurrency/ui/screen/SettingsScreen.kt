@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.navigation.NavHostController
@@ -130,6 +131,10 @@ fun SettingsScreen(
             MaterialTheme.colorScheme.background
         )
     )
+    val sectionHeaderStyle =
+        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+    val helperTextStyle = MaterialTheme.typography.bodySmall
+    val helperTextColor = MaterialTheme.colorScheme.onSurfaceVariant
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -180,12 +185,12 @@ fun SettingsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             stringResource(R.string.settings_help_support_title),
-                            style = MaterialTheme.typography.titleMedium
+                            style = sectionHeaderStyle
                         )
                         Text(
                             stringResource(R.string.settings_help_support_subtitle),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = helperTextStyle,
+                            color = helperTextColor
                         )
                     }
                     Text(
@@ -198,7 +203,7 @@ fun SettingsScreen(
 
             Text(
                 stringResource(R.string.settings_currency_defaults_title),
-                style = MaterialTheme.typography.titleLarge
+                style = sectionHeaderStyle
             )
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -211,12 +216,12 @@ fun SettingsScreen(
                 ) {
                     Text(
                         stringResource(R.string.settings_home_destination_title),
-                        style = MaterialTheme.typography.titleMedium
+                        style = sectionHeaderStyle
                     )
                     Text(
                         stringResource(R.string.settings_home_destination_description),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = helperTextStyle,
+                        color = helperTextColor
                     )
                     OutlinedTextField(
                         value = homeInput.value,
@@ -249,8 +254,8 @@ fun SettingsScreen(
                             )
                             Text(
                                 stringResource(R.string.settings_auto_destination_description),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = helperTextStyle,
+                                color = helperTextColor
                             )
                         }
                         Switch(
@@ -283,7 +288,7 @@ fun SettingsScreen(
 
             Text(
                 stringResource(R.string.settings_rate_service_title),
-                style = MaterialTheme.typography.titleLarge
+                style = sectionHeaderStyle
             )
 
             var expanded by remember { mutableStateOf(false) }
@@ -347,8 +352,8 @@ fun SettingsScreen(
                 }
                 Text(
                     providerDescription,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = helperTextStyle,
+                    color = helperTextColor
                 )
             }
 
@@ -378,8 +383,8 @@ fun SettingsScreen(
                         if (!uiState.hasSavedApiKey) {
                             Text(
                                 stringResource(R.string.settings_no_api_key_saved),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = helperTextStyle,
+                                color = helperTextColor
                             )
                             TextButton(
                                 onClick = { uriHandler.openUri(apiSignupUrl) },
@@ -406,13 +411,17 @@ fun SettingsScreen(
                                 } else {
                                     stringResource(R.string.settings_api_key_not_verified)
                                 },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = helperTextStyle,
+                                color = helperTextColor
                             )
                             Button(
                                 onClick = viewModel::verifyAndSaveApiKey,
                                 enabled = !uiState.isVerifying,
-                                modifier = Modifier.heightIn(min = 48.dp)
+                                modifier = Modifier.heightIn(min = 48.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             ) {
                                 Text(
                                     if (uiState.isVerifying) {
@@ -426,8 +435,8 @@ fun SettingsScreen(
                         uiState.apiKeyStatus?.let { message ->
                             Text(
                                 message,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                style = helperTextStyle,
+                                color = helperTextColor
                             )
                         }
                     }
@@ -467,8 +476,8 @@ fun SettingsScreen(
                                     } else {
                                         stringResource(R.string.settings_alerts_disabled)
                                     },
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    style = helperTextStyle,
+                                    color = helperTextColor
                                 )
                             }
                             Switch(
@@ -490,8 +499,8 @@ fun SettingsScreen(
                                 Constants.FREE_PLAN_LIMIT.toString(),
                                 uiState.usageMonth
                             ),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = helperTextStyle,
+                            color = helperTextColor
                         )
                         uiState.usageWarning?.let { warning ->
                             Surface(
@@ -504,12 +513,12 @@ fun SettingsScreen(
                                 ) {
                                     Text(
                                         stringResource(R.string.settings_usage_alert_title),
-                                        style = MaterialTheme.typography.titleMedium
+                                        style = sectionHeaderStyle
                                     )
                                     Text(
                                         warning,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        style = helperTextStyle,
+                                        color = helperTextColor
                                     )
                                     TextButton(
                                         onClick = viewModel::clearUsageWarning,
@@ -539,12 +548,12 @@ fun SettingsScreen(
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             stringResource(R.string.settings_scan_camera_title),
-                            style = MaterialTheme.typography.titleMedium
+                            style = sectionHeaderStyle
                         )
                         Text(
                             stringResource(R.string.settings_scan_camera_subtitle),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = helperTextStyle,
+                            color = helperTextColor
                         )
                     }
                     Switch(
@@ -561,7 +570,7 @@ fun SettingsScreen(
             ) {
                 Text(
                     stringResource(R.string.settings_saved_offline_title),
-                    style = MaterialTheme.typography.titleLarge
+                    style = sectionHeaderStyle
                 )
                 TextButton(
                     onClick = viewModel::refreshSavedRates,
@@ -588,7 +597,7 @@ fun SettingsScreen(
                 ) {
                     Text(
                         stringResource(R.string.settings_saved_pair_title),
-                        style = MaterialTheme.typography.titleMedium
+                        style = sectionHeaderStyle
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -636,8 +645,8 @@ fun SettingsScreen(
             uiState.actionStatus?.let { message ->
                 Text(
                     message,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = helperTextStyle,
+                    color = helperTextColor
                 )
             }
 
@@ -650,8 +659,8 @@ fun SettingsScreen(
                     Text(
                         stringResource(R.string.settings_no_saved_pairs),
                         modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = helperTextStyle,
+                        color = helperTextColor
                     )
                 }
             } else {
@@ -687,12 +696,12 @@ fun SettingsScreen(
 
             Text(
                 stringResource(R.string.settings_offline_rates_title),
-                style = MaterialTheme.typography.titleLarge
+                style = sectionHeaderStyle
             )
             Text(
                 stringResource(R.string.settings_offline_rates_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = helperTextStyle,
+                color = helperTextColor
             )
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -709,7 +718,7 @@ fun SettingsScreen(
                         } else {
                             stringResource(R.string.settings_edit_offline_rate)
                         },
-                        style = MaterialTheme.typography.titleMedium
+                        style = sectionHeaderStyle
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -836,8 +845,8 @@ fun SettingsScreen(
                     Text(
                         stringResource(R.string.settings_no_offline_rates),
                         modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = helperTextStyle,
+                        color = helperTextColor
                     )
                 }
             } else {
@@ -892,10 +901,13 @@ private fun RateRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
+                Text(
+                    title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                )
                 Text(
                     subtitle,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }

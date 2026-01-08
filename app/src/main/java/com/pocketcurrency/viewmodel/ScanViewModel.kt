@@ -21,6 +21,9 @@ import com.pocketcurrency.ocr.DetectedPrice
 import com.pocketcurrency.ocr.LiveScanController
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -42,15 +45,16 @@ class ScanViewModel @Inject constructor(
     private val _ocrReadiness = MutableStateFlow<OcrReadiness>(OcrReadiness.Unknown)
     val ocrReadiness: StateFlow<OcrReadiness> = _ocrReadiness
 
+    private val _scanUiState = MutableStateFlow<LiveScanUiState>(LiveScanUiState.Idle)
+    val scanUiState: StateFlow<LiveScanUiState> = _scanUiState
+
     private val onDetectedHandler: (DetectedPrice) -> Unit = { detected ->
-        onScanResult(
-            amount = detected.amount,
-            currencyCode = detected.currencyCode,
-            currencyConfidence = detected.currencyConfidence,
-            currencySource = detected.currencySource
-        )
+        handleDetectedPrice(detected)
     }
-    private val onErrorHandler: (Throwable) -> Unit = { error ->
+    private val onErrorHandler: (Throwable) -> Unit = handler@{ error ->
+        if (error is CancellationException) {
+            return@handler
+        }
         if (BuildConfig.DEBUG) {
             Log.e(TAG, "Failed to recognize live scan text", error)
         }
@@ -64,8 +68,11 @@ class ScanViewModel @Inject constructor(
         )
     }
     private var ocrModelManager: OcrModelManager? = null
-    private var liveScanRequested = false
+    private var liveScanEnabled = false
     private var hasCameraPermission = false
+    private var pendingStart = false
+    private var isCameraActive = false
+    private var scanTimeoutJob: Job? = null
 
     fun onScanResult(
         amount: Double,
@@ -79,6 +86,10 @@ class ScanViewModel @Inject constructor(
             currencyConfidence,
             currencySource
         )
+    }
+
+    internal fun onDetectedPriceForTesting(detected: DetectedPrice) {
+        handleDetectedPrice(detected)
     }
 
     internal fun setLiveScanControllerForTesting(controller: LiveScanControllerDelegate) {
@@ -107,13 +118,39 @@ class ScanViewModel @Inject constructor(
         liveScanController().setSurfaceProvider(surfaceProvider)
     }
 
-    fun setLiveScanActive(enabled: Boolean, hasPermission: Boolean) {
-        liveScanRequested = enabled
+    fun updateLiveScanAvailability(enabled: Boolean, hasPermission: Boolean) {
+        val wasEnabled = liveScanEnabled
+        liveScanEnabled = enabled
         hasCameraPermission = hasPermission
+        if (wasEnabled && !enabled) {
+            stopLiveScan()
+            return
+        }
+        if (enabled && pendingStart && _scanUiState.value !is LiveScanUiState.Scanning) {
+            beginLiveScan()
+        }
         updateLiveScanState()
         if (enabled && hasPermission) {
             refreshOcrReadiness()
         }
+    }
+
+    fun startLiveScan() {
+        pendingStart = true
+        scanRepository.clearScan()
+        _scanUiState.value = LiveScanUiState.Idle
+        if (liveScanEnabled) {
+            beginLiveScan()
+        } else {
+            updateLiveScanState()
+        }
+    }
+
+    fun stopLiveScan() {
+        pendingStart = false
+        _scanUiState.value = LiveScanUiState.Idle
+        cancelScanTimeout()
+        updateLiveScanState()
     }
 
     fun setSelectedFromCurrency(currencyCode: String?) {
@@ -150,21 +187,82 @@ class ScanViewModel @Inject constructor(
         }
     }
 
-    private fun updateLiveScanState() {
-        val ready = _ocrReadiness.value is OcrReadiness.Ready
-        liveScanController().setActive(
-            liveScanRequested && hasCameraPermission && ready,
-            hasCameraPermission
+    private fun handleDetectedPrice(detected: DetectedPrice) {
+        if (_scanUiState.value !is LiveScanUiState.Scanning) {
+            return
+        }
+        completeScan(
+            LiveScanUiState.Result(
+                amount = detected.amount,
+                currencyCode = detected.currencyCode
+            )
+        )
+        onScanResult(
+            amount = detected.amount,
+            currencyCode = detected.currencyCode,
+            currencyConfidence = detected.currencyConfidence,
+            currencySource = detected.currencySource
         )
     }
 
+    private fun beginLiveScan() {
+        if (_scanUiState.value is LiveScanUiState.Scanning) {
+            return
+        }
+        _scanUiState.value = LiveScanUiState.Scanning
+        updateLiveScanState()
+    }
+
+    private fun completeScan(result: LiveScanUiState.Result) {
+        if (_scanUiState.value !is LiveScanUiState.Scanning) {
+            return
+        }
+        pendingStart = false
+        _scanUiState.value = result
+        cancelScanTimeout()
+        updateLiveScanState()
+    }
+
+    private fun updateLiveScanState() {
+        val ready = _ocrReadiness.value is OcrReadiness.Ready
+        val shouldRun = _scanUiState.value is LiveScanUiState.Scanning &&
+            liveScanEnabled &&
+            hasCameraPermission &&
+            ready
+        if (shouldRun && !isCameraActive) {
+            startScanTimeout()
+        } else if (!shouldRun && isCameraActive) {
+            cancelScanTimeout()
+        }
+        isCameraActive = shouldRun
+        liveScanController().setActive(shouldRun, hasCameraPermission)
+    }
+
+    private fun startScanTimeout() {
+        cancelScanTimeout()
+        scanTimeoutJob = viewModelScope.launch {
+            delay(LIVE_SCAN_TIMEOUT_MS)
+            if (_scanUiState.value is LiveScanUiState.Scanning) {
+                completeScan(LiveScanUiState.Result(amount = null, currencyCode = null))
+            }
+        }
+    }
+
+    private fun cancelScanTimeout() {
+        scanTimeoutJob?.cancel()
+        scanTimeoutJob = null
+    }
+
     override fun onCleared() {
+        cancelScanTimeout()
         liveScanController?.close()
         super.onCleared()
     }
 }
 
 private const val TAG = "ScanViewModel"
+// 4.5s timeout to balance OCR stability with battery/privacy.
+internal const val LIVE_SCAN_TIMEOUT_MS = 4500L
 
 sealed class OcrReadiness {
     object Unknown : OcrReadiness()
@@ -181,6 +279,12 @@ enum class OcrUnavailableReason {
     PlayServicesUpdating,
     ModelNotDownloaded,
     Unknown
+}
+
+sealed class LiveScanUiState {
+    object Idle : LiveScanUiState()
+    object Scanning : LiveScanUiState()
+    data class Result(val amount: Double?, val currencyCode: String?) : LiveScanUiState()
 }
 
 internal interface LiveScanControllerDelegate : AutoCloseable {
