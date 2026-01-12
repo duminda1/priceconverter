@@ -16,19 +16,20 @@ Designed for non-technical users, PocketCurrency works anywhere in the world wit
 - Manual price conversion with quick currency swap
 - Saved rate pairs for offline use, with refresh controls
 - Manual offline rates for full control
-- Camera-based live scan (OCR) with currency detection
+- Live scan with on-device OCR, detected currency hints, and scan-again/manual fallback
+- Home and destination defaults with auto-detect and quick overrides
 - Rate service selection: Frankfurter daily updates or Custom API (exchangerate.host)
-- Realtime toggle, rate-source indicators, and API usage alerts
+- Realtime toggle, rate-source indicators, stale warnings, and usage alerts for Custom API
 
 ---
 
-## Technical Setup Guide
+## Developer Setup Guide
 
 ### Requirements
 
-- Android Studio (latest stable version)
-- Android SDK 35
-- Kotlin
+- Android Studio (latest stable): https://developer.android.com/studio
+- Android SDK Platform 35 (API 35): https://developer.android.com/studio/releases/platforms
+- JDK 11: https://adoptium.net/temurin/releases/?version=11
 - Android Emulator or a physical Android device
 
 ---
@@ -40,7 +41,7 @@ git clone https://github.com/duminda1/priceconverter.git
 cd priceconverter
 ```
 
-## Open in Android Studio
+### Open in Android Studio
 
 1. Open Android Studio
 2. Select **Open**
@@ -49,7 +50,17 @@ cd priceconverter
 
 ---
 
-## Run on an Emulator
+### Build from the Command Line (Optional)
+
+Ensure `local.properties` has your Android SDK path (Android Studio creates this file automatically).
+
+```bash
+./gradlew :app:assembleDebug
+```
+
+---
+
+### Run on an Emulator
 
 1. Open **Device Manager** in Android Studio
 2. Create or start an Android emulator
@@ -58,7 +69,7 @@ cd priceconverter
 
 ---
 
-## Run on a Real Device
+### Run on a Real Device
 
 1. Enable **Developer Options** on your Android phone
 2. Enable **USB Debugging**
@@ -68,17 +79,57 @@ cd priceconverter
 
 ---
 
+### Run Tests
+
+Unit tests:
+
+```bash
+./gradlew testDebugUnitTest
+```
+
+Instrumentation tests (requires an emulator or physical device):
+
+```bash
+./gradlew connectedDebugAndroidTest
+```
+
+Coverage report:
+
+```bash
+./gradlew jacocoTestReport
+```
+
+Lint checks:
+
+```bash
+./gradlew lint
+```
+
+---
+
+### Release Builds (Optional)
+
+Release builds require TLS pin values for the rate services. Provide them in CI via environment
+variables or `-P` Gradle properties:
+
+- `EXCHANGE_RATE_API_PINS`
+- `FRANKFURTER_API_PINS`
+
+Firebase App Distribution tasks also require `FIREBASE_APP_ID`.
+
+---
+
 ## Rate Services and Updates (Optional)
 
 PocketCurrency works without internet access using saved or manual rates. To enable automatic updates:
 
 1. Open **Settings -> Rate service**
 2. Choose a provider:
-   - Frankfurter (default): daily rates around 16:00 CET, no API key
-   - Advanced: Custom API (exchangerate.host): realtime updates with your API key
+   - Frankfurter (default): daily rates around 16:00 CET, no API key required. https://www.frankfurter.app/
+   - Advanced: Custom API (exchangerate.host): realtime updates with your API key. https://exchangerate.host/
 3. For realtime conversions, enable the **Realtime** toggle on the main screen.
 4. Saved pairs can be fetched or refreshed in **Settings -> Saved for offline use**.
-5. The Advanced provider shows usage and optional alerts for the free plan (100 requests/month).
+5. The Advanced provider shows usage, plan limits, and optional alerts in **Settings -> Rate service -> Plan & usage**.
 
 ---
 
@@ -98,11 +149,14 @@ Tip: Use the swap button between the currency fields to flip them quickly.
 
 ### Scan a Price Using the Camera
 
-1. Enable **Scan** on the main screen
-2. Allow camera permission when prompted
-3. If prompted, connect once to download the OCR model (Google Play services required)
-4. Point your camera at a price
-5. PocketCurrency automatically detects and converts the value
+1. Enable **Scan** on the main screen (or in **Settings -> Scan prices with camera**).
+2. Tap **Start live scan**. The camera stays off until you start.
+3. Allow camera permission when prompted.
+4. If prompted, tap **Download model** to install OCR (requires internet and Google Play services: https://support.google.com/googleplay/answer/9037938).
+5. Point your camera at a price.
+6. If no price is detected, tap **Scan again** or **Enter manually** to type the amount.
+
+If a currency symbol or code is detected with high confidence, PocketCurrency updates the **From** currency and shows a "Detected EUR" hint. If it shows "Detected EUR (inferred)", you can override it manually.
 
 ---
 
@@ -127,7 +181,7 @@ Tip: Use the swap button between the currency fields to flip them quickly.
 
 - Home currency is the default **To** currency
 - Destination currency is the default **From** currency
-- Auto-detect uses your device region or locale and can be overridden in **Settings**
+- Auto-detect uses your device country when enabled and can be changed in **Settings -> Home & destination**
 
 ---
 
@@ -152,7 +206,7 @@ PocketCurrency is designed for travel and works without internet access:
 
 When realtime is enabled and supported, PocketCurrency tries **Live -> Saved -> Offline**.
 Otherwise, it uses **Saved -> Offline**.
-The current rate source and last update time are always visible in the app.
+The current rate source and last update time are always visible in the app. Tap the info icon next to the status line to learn more about rate sources and stale warnings.
 
 ---
 
@@ -160,9 +214,9 @@ The current rate source and last update time are always visible in the app.
 
 PocketCurrency can automatically update exchange rates using an online price update service.
 
-- The default service is Frankfurter (no API key required)
+- The default service is Frankfurter (no API key required): https://www.frankfurter.app/
 - Frankfurter updates once per day around 16:00 CET and refreshes saved pairs when you are online
-- Advanced users can switch to Custom API (exchangerate.host) for realtime updates and usage tracking
+- Advanced users can switch to Custom API (exchangerate.host) for realtime updates and usage tracking: https://exchangerate.host/
 
 To use your own service (exchangerate.host):
 
@@ -194,10 +248,11 @@ PocketCurrency is built with accessibility in mind:
 - No API keys are stored in source code
 - No personal user data is collected
 - All data is stored locally on the device
+- Camera input is used only for live scanning and is never saved or uploaded
 
 ## Backup & Restore
 
-PocketCurrency uses Android Auto Backup and device-to-device transfer to preserve non-sensitive data during device migration.
+PocketCurrency uses Android Auto Backup and device-to-device transfer to preserve non-sensitive data during device migration. https://developer.android.com/guide/topics/data/backup
 
 What is backed up:
 - `price_converter_prefs.xml` (manual rates, saved rates, and user settings)
