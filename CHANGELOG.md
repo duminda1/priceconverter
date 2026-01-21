@@ -1,0 +1,396 @@
+# Changelog
+
+## [1.3.7] - 2026-01-21
+- Update scan flow and UI polish
+- Update docs and guard release signing
+- Configure release pins and App Distribution
+- updated
+- Harden pin rotation and backup rules
+- Updated
+- Updated kotlin version
+- Fix kotalin versio
+- Remove Hilt plugin from build.gradle.kts
+- Fix duplicate entry for firebase-appdistribution
+- Update build.gradle.kts
+- Add GRADLE_OPTS environment variable to android.yml
+- Fix backup rules lint errors
+- Improve OCR currency inference and parsing
+- Perform low-risk code hygiene and consistency cleanup
+- Standardize network retry logic
+- Remove unused and misleading repository code
+- Re-evaluate backup and restore strategy for user data.
+- Certificate Pinning Enablement (Optional Security Hardening)
+- Harden ProGuard/R8 configuration to future-proof the release build
+
+## [1.3.6] - 2026-01-21
+- Update scan flow and UI polish
+- Update docs and guard release signing
+- Configure release pins and App Distribution
+- updated
+- Harden pin rotation and backup rules
+- Updated
+- Updated kotlin version
+- Fix kotalin versio
+- Remove Hilt plugin from build.gradle.kts
+- Fix duplicate entry for firebase-appdistribution
+- Update build.gradle.kts
+- Add GRADLE_OPTS environment variable to android.yml
+- Fix backup rules lint errors
+- Improve OCR currency inference and parsing
+- Perform low-risk code hygiene and consistency cleanup
+- Standardize network retry logic
+- Remove unused and misleading repository code
+- Re-evaluate backup and restore strategy for user data.
+- Certificate Pinning Enablement (Optional Security Hardening)
+- Harden ProGuard/R8 configuration to future-proof the release build
+
+## [1.3.5] - 2026-01-21
+- Update scan flow and UI polish
+- Update docs and guard release signing
+- Configure release pins and App Distribution
+- updated
+- Harden pin rotation and backup rules
+- Updated
+- Updated kotlin version
+- Fix kotalin versio
+- Remove Hilt plugin from build.gradle.kts
+- Fix duplicate entry for firebase-appdistribution
+- Update build.gradle.kts
+- Add GRADLE_OPTS environment variable to android.yml
+- Fix backup rules lint errors
+- Improve OCR currency inference and parsing
+- Perform low-risk code hygiene and consistency cleanup
+- Standardize network retry logic
+- Remove unused and misleading repository code
+- Re-evaluate backup and restore strategy for user data.
+- Certificate Pinning Enablement (Optional Security Hardening)
+- Harden ProGuard/R8 configuration to future-proof the release build
+
+## [1.3.4] - 2026-01-21
+- Update scan flow and UI polish
+- Update docs and guard release signing
+- Configure release pins and App Distribution
+- updated
+- Harden pin rotation and backup rules
+- Updated
+- Updated kotlin version
+- Fix kotalin versio
+- Remove Hilt plugin from build.gradle.kts
+- Fix duplicate entry for firebase-appdistribution
+- Update build.gradle.kts
+- Add GRADLE_OPTS environment variable to android.yml
+- Fix backup rules lint errors
+- Improve OCR currency inference and parsing
+- Perform low-risk code hygiene and consistency cleanup
+- Standardize network retry logic
+- Remove unused and misleading repository code
+- Re-evaluate backup and restore strategy for user data.
+- Certificate Pinning Enablement (Optional Security Hardening)
+- Harden ProGuard/R8 configuration to future-proof the release build
+
+## [1.3.3] - 2026-01-21
+- Update scan flow and UI polish
+- Update docs and guard release signing
+- Configure release pins and App Distribution
+- updated
+- Harden pin rotation and backup rules
+- Updated
+- Updated kotlin version
+- Fix kotalin versio
+- Remove Hilt plugin from build.gradle.kts
+- Fix duplicate entry for firebase-appdistribution
+- Update build.gradle.kts
+- Add GRADLE_OPTS environment variable to android.yml
+- Fix backup rules lint errors
+- Improve OCR currency inference and parsing
+- Perform low-risk code hygiene and consistency cleanup
+- Standardize network retry logic
+- Remove unused and misleading repository code
+- Re-evaluate backup and restore strategy for user data.
+- Certificate Pinning Enablement (Optional Security Hardening)
+- Harden ProGuard/R8 configuration to future-proof the release build
+- OCR Reliability & Offline Readiness
+- Code Hygiene & Maintainability Cleanup
+- Storage responsibility and performance cleanup
+- Security hardening improvements
+- Camera & OCR Pipeline Architecture (Lifecycle + Testability)
+- Architecture cleanup: ViewModel responsibilities & lifecycle safety
+- Harden JSON parsing for R8
+- Security Hardening & Release Polish
+- Refactor network layer into Hilt modules
+- Fix ViewModel Composition Anti-Pattern
+- Fix Hilt DI Graph (SharedPreferences + Storage)
+- Dependency Hygiene for Play Store Release
+- Throttle live OCR to reduce battery & thermal load
+- Fix ML Kit TextRecognizer lifecycle
+- Fix ML Kit TextRecognizer lifecycle
+- Add tests for manual rate validation
+- Fix manual offline rate editing and validation UX
+- Migrate to Hilt Dependency Injection
+- Release Build Hardening
+- Fix camera permission flow and denied-state UX
+- Refactor Android CI workflow for efficiency
+- Simplify plugin management repositories configuration
+- Fix rate freshness and stale warnings
+- Align targetSdk/compileSdk with Play requirements
+- Update README.md
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\emulator-landscape.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\emulator-portrait.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\phone-landscape.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\phone-portrait.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\test.txt
+- Refactor settings storage and localize UI strings
+- Refactor scan and amount input; add Hilt setup
+- structured logs
+- Extract strings and name scan timing constants
+- Opt in to ExperimentalGetImage usage
+- Refactor OCR amount parsing and add tests
+- Harden release config and improve OCR/input
+- Added changes for .idea and gradle
+- Fix OCR parsing and update Compose deprecations
+- Fix CameraX OCR pipeline and grouped number parsing
+- Refine MainScreen responsive layout
+- Fix lint and Kotlin style issues
+- Fix lint and composable conventions
+- Fix lint configuration syntax in build.gradle.kts
+- Update README.md
+- Add lint.xml configuration for resource issues
+- Add Android Lint step to CI workflow
+- Enable lint options in build.gradle.kts
+- Updated README
+- Add CODEOWNERS file for repository ownership
+- Create SECURITY.md
+- Fix ExchangeRatesProvider syntax typo
+- Deduplicate exchangerate error mapping
+- Update exchangerate.host integration and UI
+- jacoco changes
+- Bug fix and coverage changes
+- added badges
+- Added codcov env
+- Allow SettingsViewModel injection for tests
+- Simplify viewmodel test mocks
+- Fix viewmodel unit test compilation
+- Add unit tests for viewmodels
+- Added jacoco report
+- Added jacoco reports
+- Update build config for tests
+- Add unit tests for OCR and rate handling
+- Improve scan UI and small value formatting
+- Added workflow change
+- Polish UI copy and spacing
+- Add Frankfurter provider and rate update flow
+- Update PocketCurrency features
+- Updated .idea files
+- fixed formatting issue
+- Updated readme
+- Update issue templates
+- Update issue templates
+- Update UI layout and settings behavior
+- added new files
+- Initial commit
+- Initial commit
+
+## [1.3.2] - 2026-01-21
+- Update scan flow and UI polish
+- Update docs and guard release signing
+- Configure release pins and App Distribution
+- updated
+- Harden pin rotation and backup rules
+- Updated
+- Updated kotlin version
+- Fix kotalin versio
+- Remove Hilt plugin from build.gradle.kts
+- Fix duplicate entry for firebase-appdistribution
+- Update build.gradle.kts
+- Add GRADLE_OPTS environment variable to android.yml
+- Fix backup rules lint errors
+- Improve OCR currency inference and parsing
+- Perform low-risk code hygiene and consistency cleanup
+- Standardize network retry logic
+- Remove unused and misleading repository code
+- Re-evaluate backup and restore strategy for user data.
+- Certificate Pinning Enablement (Optional Security Hardening)
+- Harden ProGuard/R8 configuration to future-proof the release build
+- OCR Reliability & Offline Readiness
+- Code Hygiene & Maintainability Cleanup
+- Storage responsibility and performance cleanup
+- Security hardening improvements
+- Camera & OCR Pipeline Architecture (Lifecycle + Testability)
+- Architecture cleanup: ViewModel responsibilities & lifecycle safety
+- Harden JSON parsing for R8
+- Security Hardening & Release Polish
+- Refactor network layer into Hilt modules
+- Fix ViewModel Composition Anti-Pattern
+- Fix Hilt DI Graph (SharedPreferences + Storage)
+- Dependency Hygiene for Play Store Release
+- Throttle live OCR to reduce battery & thermal load
+- Fix ML Kit TextRecognizer lifecycle
+- Fix ML Kit TextRecognizer lifecycle
+- Add tests for manual rate validation
+- Fix manual offline rate editing and validation UX
+- Migrate to Hilt Dependency Injection
+- Release Build Hardening
+- Fix camera permission flow and denied-state UX
+- Refactor Android CI workflow for efficiency
+- Simplify plugin management repositories configuration
+- Fix rate freshness and stale warnings
+- Align targetSdk/compileSdk with Play requirements
+- Update README.md
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\emulator-landscape.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\emulator-portrait.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\phone-landscape.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\phone-portrait.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\test.txt
+- Refactor settings storage and localize UI strings
+- Refactor scan and amount input; add Hilt setup
+- structured logs
+- Extract strings and name scan timing constants
+- Opt in to ExperimentalGetImage usage
+- Refactor OCR amount parsing and add tests
+- Harden release config and improve OCR/input
+- Added changes for .idea and gradle
+- Fix OCR parsing and update Compose deprecations
+- Fix CameraX OCR pipeline and grouped number parsing
+- Refine MainScreen responsive layout
+- Fix lint and Kotlin style issues
+- Fix lint and composable conventions
+- Fix lint configuration syntax in build.gradle.kts
+- Update README.md
+- Add lint.xml configuration for resource issues
+- Add Android Lint step to CI workflow
+- Enable lint options in build.gradle.kts
+- Updated README
+- Add CODEOWNERS file for repository ownership
+- Create SECURITY.md
+- Fix ExchangeRatesProvider syntax typo
+- Deduplicate exchangerate error mapping
+- Update exchangerate.host integration and UI
+- jacoco changes
+- Bug fix and coverage changes
+- added badges
+- Added codcov env
+- Allow SettingsViewModel injection for tests
+- Simplify viewmodel test mocks
+- Fix viewmodel unit test compilation
+- Add unit tests for viewmodels
+- Added jacoco report
+- Added jacoco reports
+- Update build config for tests
+- Add unit tests for OCR and rate handling
+- Improve scan UI and small value formatting
+- Added workflow change
+- Polish UI copy and spacing
+- Add Frankfurter provider and rate update flow
+- Update PocketCurrency features
+- Updated .idea files
+- fixed formatting issue
+- Updated readme
+- Update issue templates
+- Update issue templates
+- Update UI layout and settings behavior
+- added new files
+- Initial commit
+- Initial commit
+
+## [1.3.1] - 2026-01-21
+- Update scan flow and UI polish
+- Update docs and guard release signing
+- Configure release pins and App Distribution
+- updated
+- Harden pin rotation and backup rules
+- Updated
+- Updated kotlin version
+- Fix kotalin versio
+- Remove Hilt plugin from build.gradle.kts
+- Fix duplicate entry for firebase-appdistribution
+- Update build.gradle.kts
+- Add GRADLE_OPTS environment variable to android.yml
+- Fix backup rules lint errors
+- Improve OCR currency inference and parsing
+- Perform low-risk code hygiene and consistency cleanup
+- Standardize network retry logic
+- Remove unused and misleading repository code
+- Re-evaluate backup and restore strategy for user data.
+- Certificate Pinning Enablement (Optional Security Hardening)
+- Harden ProGuard/R8 configuration to future-proof the release build
+- OCR Reliability & Offline Readiness
+- Code Hygiene & Maintainability Cleanup
+- Storage responsibility and performance cleanup
+- Security hardening improvements
+- Camera & OCR Pipeline Architecture (Lifecycle + Testability)
+- Architecture cleanup: ViewModel responsibilities & lifecycle safety
+- Harden JSON parsing for R8
+- Security Hardening & Release Polish
+- Refactor network layer into Hilt modules
+- Fix ViewModel Composition Anti-Pattern
+- Fix Hilt DI Graph (SharedPreferences + Storage)
+- Dependency Hygiene for Play Store Release
+- Throttle live OCR to reduce battery & thermal load
+- Fix ML Kit TextRecognizer lifecycle
+- Fix ML Kit TextRecognizer lifecycle
+- Add tests for manual rate validation
+- Fix manual offline rate editing and validation UX
+- Migrate to Hilt Dependency Injection
+- Release Build Hardening
+- Fix camera permission flow and denied-state UX
+- Refactor Android CI workflow for efficiency
+- Simplify plugin management repositories configuration
+- Fix rate freshness and stale warnings
+- Align targetSdk/compileSdk with Play requirements
+- Update README.md
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\emulator-landscape.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\emulator-portrait.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\phone-landscape.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\phone-portrait.png
+- Delete C:\Users\dumin\AppData\Local\Temp\priceconverter-screens\test.txt
+- Refactor settings storage and localize UI strings
+- Refactor scan and amount input; add Hilt setup
+- structured logs
+- Extract strings and name scan timing constants
+- Opt in to ExperimentalGetImage usage
+- Refactor OCR amount parsing and add tests
+- Harden release config and improve OCR/input
+- Added changes for .idea and gradle
+- Fix OCR parsing and update Compose deprecations
+- Fix CameraX OCR pipeline and grouped number parsing
+- Refine MainScreen responsive layout
+- Fix lint and Kotlin style issues
+- Fix lint and composable conventions
+- Fix lint configuration syntax in build.gradle.kts
+- Update README.md
+- Add lint.xml configuration for resource issues
+- Add Android Lint step to CI workflow
+- Enable lint options in build.gradle.kts
+- Updated README
+- Add CODEOWNERS file for repository ownership
+- Create SECURITY.md
+- Fix ExchangeRatesProvider syntax typo
+- Deduplicate exchangerate error mapping
+- Update exchangerate.host integration and UI
+- jacoco changes
+- Bug fix and coverage changes
+- added badges
+- Added codcov env
+- Allow SettingsViewModel injection for tests
+- Simplify viewmodel test mocks
+- Fix viewmodel unit test compilation
+- Add unit tests for viewmodels
+- Added jacoco report
+- Added jacoco reports
+- Update build config for tests
+- Add unit tests for OCR and rate handling
+- Improve scan UI and small value formatting
+- Added workflow change
+- Polish UI copy and spacing
+- Add Frankfurter provider and rate update flow
+- Update PocketCurrency features
+- Updated .idea files
+- fixed formatting issue
+- Updated readme
+- Update issue templates
+- Update issue templates
+- Update UI layout and settings behavior
+- added new files
+- Initial commit
+- Initial commit
+

@@ -1,4 +1,8 @@
 import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
+import java.io.ByteArrayOutputStream
+import java.time.LocalDate
+import java.util.Properties
+import org.gradle.api.Project
 
 // Release pins must be injected via -P... or environment variables in CI.
 // Required CI inputs: EXCHANGE_RATE_API_PINS and FRANKFURTER_API_PINS (CSV of sha256 pins).
@@ -19,6 +23,105 @@ val hasReleaseSigning = keystorePathProvider.isPresent &&
     keystorePasswordProvider.isPresent &&
     keyAliasProvider.isPresent &&
     keyPasswordProvider.isPresent
+val versionPropsFile = rootProject.layout.projectDirectory.file("version.properties").asFile
+val changelogFile = rootProject.layout.projectDirectory.file("CHANGELOG.md").asFile
+val releaseNotesFileProvider = layout.buildDirectory.file("outputs/release-notes/release_notes.txt")
+
+data class VersionInfo(
+    val code: Int,
+    val name: String,
+    val major: Int,
+    val minor: Int,
+    val patch: Int
+)
+
+fun parseSemver(name: String): Triple<Int, Int, Int> {
+    val parts = name.split(".")
+    val major = parts.getOrNull(0)?.toIntOrNull() ?: 0
+    val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
+    val patch = parts.getOrNull(2)?.toIntOrNull() ?: 0
+    return Triple(major, minor, patch)
+}
+
+fun readVersionInfo(): VersionInfo {
+    val props = Properties()
+    if (versionPropsFile.exists()) {
+        versionPropsFile.inputStream().use { props.load(it) }
+    }
+    val code = props.getProperty("versionCode")?.trim()?.toIntOrNull() ?: 1
+    val name = props.getProperty("versionName")?.trim().orEmpty().ifBlank { "0.1.0" }
+    val (major, minor, patch) = parseSemver(name)
+    return VersionInfo(code, name, major, minor, patch)
+}
+
+fun writeVersionInfo(info: VersionInfo) {
+    versionPropsFile.writeText(
+        "versionCode=${info.code}\n" +
+            "versionName=${info.name}\n"
+    )
+}
+
+fun bumpPatch(info: VersionInfo): VersionInfo {
+    val newPatch = info.patch + 1
+    val newName = "${info.major}.${info.minor}.$newPatch"
+    return info.copy(code = info.code + 1, name = newName, patch = newPatch)
+}
+
+fun gitOutput(project: Project, vararg args: String): String? {
+    return try {
+        val output = ByteArrayOutputStream()
+        project.exec {
+            commandLine("git", *args)
+            workingDir = rootProject.projectDir
+            standardOutput = output
+            errorOutput = ByteArrayOutputStream()
+            isIgnoreExitValue = true
+        }
+        output.toString().trim().ifBlank { null }
+    } catch (e: Exception) {
+        null
+    }
+}
+
+fun extractChangelogNotes(changelog: String, versionName: String): List<String>? {
+    val headerRegex = Regex("^## \\[?${Regex.escape(versionName)}\\]?")
+    val lines = changelog.lines()
+    val startIndex = lines.indexOfFirst { headerRegex.containsMatchIn(it.trim()) }
+    if (startIndex == -1) return null
+    val notes = mutableListOf<String>()
+    for (i in (startIndex + 1) until lines.size) {
+        val line = lines[i].trim()
+        if (line.startsWith("## ")) break
+        if (line.startsWith("- ") || line.startsWith("* ")) {
+            notes.add(line.drop(2).trim())
+        }
+    }
+    return notes
+}
+
+fun insertChangelogEntry(changelog: String, entry: String): String {
+    if (changelog.isBlank()) {
+        return "# Changelog\n\n$entry"
+    }
+    val headerIndex = changelog.indexOf("# Changelog")
+    return if (headerIndex >= 0) {
+        val afterHeader = changelog.substring(headerIndex + "# Changelog".length).trimStart()
+        "# Changelog\n\n$entry$afterHeader"
+    } else {
+        "# Changelog\n\n$entry${changelog.trimStart()}"
+    }
+}
+
+fun upsertChangelogEntry(changelog: String, versionName: String, entry: String): String {
+    val sectionRegex = Regex(
+        "(?ms)^## \\[?${Regex.escape(versionName)}\\]?.*?(?=^## |\\z)"
+    )
+    return if (sectionRegex.containsMatchIn(changelog)) {
+        sectionRegex.replace(changelog, entry.trimEnd())
+    } else {
+        insertChangelogEntry(changelog, entry)
+    }
+}
 
 fun buildConfigString(value: String): String {
     val escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
@@ -57,7 +160,7 @@ android {
         minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "1.3"
+        versionName = "0.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Pinning config: CSV lists of sha256 pins. Keep current + next for overlap.
         // Remote config can override when PREFS_PIN_CONFIG_VERSION >= PIN_CONFIG_VERSION.
@@ -84,7 +187,7 @@ android {
             isShrinkResources = true
  
             firebaseAppDistribution {
-                releaseNotes = "PocketCurrency beta – offline rates & camera scan"
+                releaseNotesFile = releaseNotesFileProvider.get().asFile.absolutePath
                 appId = firebaseAppIdProvider.orNull?.trim().orEmpty()
                 artifactType = "APK"
             }
@@ -138,6 +241,115 @@ android {
     }
 }
 
+androidComponents {
+    val versionPropsProvider = providers.fileContents(
+        rootProject.layout.projectDirectory.file("version.properties")
+    ).asText
+    val versionInfoProvider = versionPropsProvider.map { content ->
+        val props = Properties()
+        content.reader().use { props.load(it) }
+        val code = props.getProperty("versionCode")?.trim()?.toIntOrNull() ?: 1
+        val name = props.getProperty("versionName")?.trim().orEmpty().ifBlank { "0.1.0" }
+        val (major, minor, patch) = parseSemver(name)
+        VersionInfo(code, name, major, minor, patch)
+    }
+    val versionCodeProvider = versionInfoProvider.map { it.code }
+    val versionNameProvider = versionInfoProvider.map { it.name }
+
+    onVariants(selector().all()) { variant ->
+        variant.outputs.forEach { output ->
+            output.versionCode.set(versionCodeProvider)
+            output.versionName.set(versionNameProvider)
+        }
+    }
+}
+
+val bumpReleaseVersion = tasks.register("bumpReleaseVersion") {
+    group = "release"
+    description = "Bump versionCode and versionName patch for release builds."
+    doLast {
+        val current = readVersionInfo()
+        val bumped = bumpPatch(current)
+        writeVersionInfo(bumped)
+        logger.lifecycle("Version bumped to ${bumped.name} (${bumped.code}).")
+    }
+}
+
+val generateReleaseNotes = tasks.register("generateReleaseNotes") {
+    group = "release"
+    description = "Generate release notes and update CHANGELOG.md."
+    dependsOn(bumpReleaseVersion)
+    doLast {
+        val current = readVersionInfo()
+        val versionName = current.name
+        val date = LocalDate.now().toString()
+        val releaseNotesFile = releaseNotesFileProvider.get().asFile
+
+        val changelogText = if (changelogFile.exists()) changelogFile.readText() else ""
+        val changelogNotes = extractChangelogNotes(changelogText, versionName)
+
+        val notes = if (changelogNotes.isNullOrEmpty()) {
+            val lastTag = gitOutput(project, "describe", "--tags", "--abbrev=0")
+            val gitNotes = if (lastTag.isNullOrBlank()) {
+                gitOutput(
+                    project,
+                    "log",
+                    "--no-merges",
+                    "-n",
+                    "20",
+                    "--pretty=format:%s"
+                )
+            } else {
+                gitOutput(
+                    project,
+                    "log",
+                    "--no-merges",
+                    "--pretty=format:%s",
+                    "$lastTag..HEAD"
+                )
+            }?.lines().orEmpty().filter { it.isNotBlank() }.take(50)
+            if (gitNotes.isNotEmpty()) gitNotes else listOf("No changes listed.")
+        } else {
+            changelogNotes
+        }
+
+        val formattedNotes = notes.map { it.trimStart('-', ' ').trim() }
+        releaseNotesFile.parentFile.mkdirs()
+        releaseNotesFile.writeText(formattedNotes.joinToString("\n") { "- $it" } + "\n")
+
+        if (changelogNotes.isNullOrEmpty()) {
+            val entry = buildString {
+                appendLine("## [$versionName] - $date")
+                formattedNotes.forEach { appendLine("- $it") }
+                appendLine()
+            }
+            changelogFile.writeText(
+                upsertChangelogEntry(changelogText, versionName, entry)
+            )
+        }
+    }
+}
+
+tasks.register("prepareRelease") {
+    group = "release"
+    description = "Bump version, generate release notes, and update CHANGELOG.md without building."
+    dependsOn(generateReleaseNotes)
+}
+
+tasks.register("printReleaseNotes") {
+    group = "release"
+    description = "Print the latest generated release notes."
+    doLast {
+        val notesFile = releaseNotesFileProvider.get().asFile
+        if (!notesFile.exists()) {
+            throw GradleException(
+                "Release notes not found. Run :app:prepareRelease or :app:generateReleaseNotes first."
+            )
+        }
+        println(notesFile.readText().trimEnd())
+    }
+}
+
 val verifyReleasePinConfig = tasks.register("verifyReleasePinConfig") {
     doLast {
         val exchangePins = exchangeRatePinsProvider.orNull?.trim().orEmpty()
@@ -166,11 +378,17 @@ val verifyFirebaseAppId = tasks.register("verifyFirebaseAppId") {
 tasks.matching {
     it.name in setOf(
         "assembleRelease",
-        "bundleRelease",
-        "appDistributionUploadRelease"
+        "bundleRelease"
     )
 }.configureEach {
     dependsOn(verifyReleasePinConfig)
+}
+
+tasks.matching {
+    it.name in setOf("appDistributionUploadRelease")
+}.configureEach {
+    dependsOn(verifyReleasePinConfig)
+    dependsOn(generateReleaseNotes)
 }
 
 tasks.matching {
