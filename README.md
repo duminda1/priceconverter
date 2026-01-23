@@ -120,6 +120,10 @@ App Distribution uploads auto-generate release notes and a temporary version; th
 persists to `version.properties` after a successful upload, and re-uploading the same commit
 reuses the same version.
 
+You can also supply pins via `PINS_FILE` (a path to a file with `EXCHANGE_RATE_API_PINS=...`
+and `FRANKFURTER_API_PINS=...`). Use `scripts/generate_pins.sh --out /tmp/pins.env` to create
+the file and set `PINS_FILE=/tmp/pins.env` for the release build.
+
 ---
 
 ## Rate Services and Updates (Optional)

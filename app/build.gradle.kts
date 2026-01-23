@@ -4,6 +4,7 @@ import java.io.File
 import java.time.LocalDate
 import java.util.Properties
 import org.gradle.api.Project
+import org.gradle.api.provider.Provider
 
 // Release pins must be injected via -P... or environment variables in CI.
 // Required CI inputs: EXCHANGE_RATE_API_PINS and FRANKFURTER_API_PINS (CSV of sha256 pins).
@@ -11,6 +12,8 @@ val exchangeRatePinsProvider = providers.gradleProperty("EXCHANGE_RATE_API_PINS"
     .orElse(providers.environmentVariable("EXCHANGE_RATE_API_PINS"))
 val frankfurterPinsProvider = providers.gradleProperty("FRANKFURTER_API_PINS")
     .orElse(providers.environmentVariable("FRANKFURTER_API_PINS"))
+val pinsFileProvider = providers.gradleProperty("PINS_FILE")
+    .orElse(providers.environmentVariable("PINS_FILE"))
 
 // Firebase App Distribution uploads require FIREBASE_APP_ID in CI.
 val firebaseAppIdProvider = providers.gradleProperty("FIREBASE_APP_ID")
@@ -156,6 +159,28 @@ fun upsertChangelogEntry(changelog: String, versionName: String, entry: String):
     }
 }
 
+fun resolvePinsFromFile(filePath: String?): Properties? {
+    if (filePath.isNullOrBlank()) {
+        return null
+    }
+    val file = File(filePath)
+    if (!file.exists()) {
+        return null
+    }
+    val props = Properties()
+    file.inputStream().use { props.load(it) }
+    return props
+}
+
+fun resolvePinValue(primary: Provider<String>, key: String): String {
+    val direct = primary.orNull?.trim().orEmpty()
+    if (direct.isNotEmpty()) {
+        return direct
+    }
+    val props = resolvePinsFromFile(pinsFileProvider.orNull) ?: return ""
+    return props.getProperty(key)?.trim().orEmpty()
+}
+
 fun buildConfigString(value: String): String {
     val escaped = value.replace("\\", "\\\\").replace("\"", "\\\"")
     return "\"$escaped\""
@@ -229,8 +254,14 @@ android {
             // Mapping output: app/build/outputs/mapping/release/mapping.txt
             // TODO(security): Update CI pin values and bump PIN_CONFIG_VERSION before 2026-02-01.
             // Keep current + next pins to avoid outages during certificate rotation.
-            val releaseExchangeRatePins = exchangeRatePinsProvider.orNull?.trim().orEmpty()
-            val releaseFrankfurterPins = frankfurterPinsProvider.orNull?.trim().orEmpty()
+            val releaseExchangeRatePins = resolvePinValue(
+                exchangeRatePinsProvider,
+                "EXCHANGE_RATE_API_PINS"
+            )
+            val releaseFrankfurterPins = resolvePinValue(
+                frankfurterPinsProvider,
+                "FRANKFURTER_API_PINS"
+            )
             // Release pins must be injected via CI (-P... or env vars) and non-empty.
             buildConfigField(
                 "String",
@@ -393,12 +424,12 @@ tasks.register("printReleaseNotes") {
 
 val verifyReleasePinConfig = tasks.register("verifyReleasePinConfig") {
     doLast {
-        val exchangePins = exchangeRatePinsProvider.orNull?.trim().orEmpty()
-        val frankfurterPins = frankfurterPinsProvider.orNull?.trim().orEmpty()
+        val exchangePins = resolvePinValue(exchangeRatePinsProvider, "EXCHANGE_RATE_API_PINS")
+        val frankfurterPins = resolvePinValue(frankfurterPinsProvider, "FRANKFURTER_API_PINS")
         if (exchangePins.isEmpty() || frankfurterPins.isEmpty()) {
             throw GradleException(
                 "Release builds require EXCHANGE_RATE_API_PINS and FRANKFURTER_API_PINS. " +
-                    "Set them via -P or environment variables in CI."
+                    "Set them via -P, environment variables, or PINS_FILE."
             )
         }
     }
