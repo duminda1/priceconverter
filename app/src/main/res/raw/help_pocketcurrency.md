@@ -39,8 +39,8 @@ PocketCurrency uses two defaults to save time:
 - **Home currency** is the default **To** currency
 - **Destination currency** is the default **From** currency
 
-Home currency is set the first time based on your device region, and you can change it anytime in **Settings**.
-Destination currency can auto-detect from your device region, or you can override it manually.
+Home currency is set the first time based on your device locale (country), and you can change it anytime in **Settings**.
+Destination currency can auto-detect from your device country, or you can override it manually.
 
 To change auto-detect, open **Settings -> Home & destination** and toggle **Auto-detect destination**.
 When it is on, the destination field updates from your device country and cannot be edited.
@@ -123,7 +123,7 @@ Yes. PocketCurrency works offline.
 Price updates let PocketCurrency refresh rates when you are online.
 
 ### Recommended option (easy)
-- Use the built-in Frankfurter service (default): https://www.frankfurter.app/
+- Use the built-in Frankfurter service (default), labeled **Daily updates (recommended)**: https://www.frankfurter.app/
 - No API key required
 - Daily updates around 16:00 CET
 - Best for keeping saved rate pairs up to date
@@ -141,7 +141,8 @@ To do this:
 7. Enable **Realtime** on the main screen
 
 When using the Custom API, PocketCurrency shows a usage meter and optional alerts for the free plan (100 requests/month).
-You can review usage and toggle alerts in **Settings -> Rate service -> Plan & usage**.
+Alerts can be toggled in **Settings -> Rate service -> Plan & usage** (the **Free plan** switch).
+Usage alerts appear at 50%, 75%, and 90% of the monthly limit.
 
 If anything goes wrong, PocketCurrency safely falls back to saved or manual rates.
 
