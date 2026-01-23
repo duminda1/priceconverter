@@ -116,6 +116,9 @@ variables or `-P` Gradle properties:
 - `FRANKFURTER_API_PINS`
 
 Firebase App Distribution tasks also require `FIREBASE_APP_ID`.
+App Distribution uploads auto-generate release notes and a temporary version; the version only
+persists to `version.properties` after a successful upload, and re-uploading the same commit
+reuses the same version.
 
 ---
 
@@ -125,8 +128,8 @@ PocketCurrency works without internet access using saved or manual rates. To ena
 
 1. Open **Settings -> Rate service**
 2. Choose a provider:
-   - Frankfurter (default): daily rates around 16:00 CET, no API key required. https://www.frankfurter.app/
-   - Advanced: Custom API (exchangerate.host): realtime updates with your API key. https://exchangerate.host/
+   - **Daily updates (recommended)** uses Frankfurter: daily rates around 16:00 CET, no API key required. https://www.frankfurter.app/
+   - **Advanced: Custom API** (exchangerate.host): realtime updates with your API key. https://exchangerate.host/
 3. For realtime conversions, enable the **Realtime** toggle on the main screen.
 4. Saved pairs can be fetched or refreshed in **Settings -> Saved for offline use**.
 5. The Advanced provider shows usage, plan limits, and optional alerts in **Settings -> Rate service -> Plan & usage**.
@@ -229,6 +232,7 @@ To use your own service (exchangerate.host):
 7. Enable **Realtime** on the main screen
 
 If the service is unavailable or the key is invalid, PocketCurrency continues using saved or manual rates.
+Usage alerts are optional and can be toggled in **Settings -> Rate service -> Plan & usage** (the **Free plan** switch).
 
 ---
 

@@ -1,5 +1,6 @@
 import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.time.LocalDate
 import java.util.Properties
 import org.gradle.api.Project
@@ -26,6 +27,7 @@ val hasReleaseSigning = keystorePathProvider.isPresent &&
 val versionPropsFile = rootProject.layout.projectDirectory.file("version.properties").asFile
 val changelogFile = rootProject.layout.projectDirectory.file("CHANGELOG.md").asFile
 val releaseNotesFileProvider = layout.buildDirectory.file("outputs/release-notes/release_notes.txt")
+val releaseVersionFileProvider = layout.buildDirectory.file("outputs/release-notes/release_version.properties")
 
 data class VersionInfo(
     val code: Int,
@@ -43,21 +45,52 @@ fun parseSemver(name: String): Triple<Int, Int, Int> {
     return Triple(major, minor, patch)
 }
 
-fun readVersionInfo(): VersionInfo {
-    val props = Properties()
-    if (versionPropsFile.exists()) {
-        versionPropsFile.inputStream().use { props.load(it) }
-    }
+fun parseVersionInfo(props: Properties): VersionInfo {
     val code = props.getProperty("versionCode")?.trim()?.toIntOrNull() ?: 1
     val name = props.getProperty("versionName")?.trim().orEmpty().ifBlank { "0.1.0" }
     val (major, minor, patch) = parseSemver(name)
     return VersionInfo(code, name, major, minor, patch)
 }
 
-fun writeVersionInfo(info: VersionInfo) {
-    versionPropsFile.writeText(
+fun readVersionInfo(file: File): VersionInfo {
+    val props = Properties()
+    if (file.exists()) {
+        file.inputStream().use { props.load(it) }
+    }
+    return parseVersionInfo(props)
+}
+
+fun readVersionInfoFromText(content: String): VersionInfo {
+    val props = Properties()
+    if (content.isNotBlank()) {
+        content.reader().use { props.load(it) }
+    }
+    return parseVersionInfo(props)
+}
+
+fun readVersionInfoWithCommit(file: File): Pair<VersionInfo, String?> {
+    val props = Properties()
+    if (file.exists()) {
+        file.inputStream().use { props.load(it) }
+    }
+    val info = parseVersionInfo(props)
+    val commit = props.getProperty("commit")?.trim().orEmpty().ifBlank { null }
+    return info to commit
+}
+
+fun writeVersionInfo(info: VersionInfo, file: File) {
+    file.writeText(
         "versionCode=${info.code}\n" +
             "versionName=${info.name}\n"
+    )
+}
+
+fun writeReleaseVersionInfo(info: VersionInfo, file: File, commit: String?) {
+    val commitLine = commit?.let { "commit=$it\n" }.orEmpty()
+    file.writeText(
+        "versionCode=${info.code}\n" +
+            "versionName=${info.name}\n" +
+            commitLine
     )
 }
 
@@ -242,16 +275,16 @@ android {
 }
 
 androidComponents {
-    val versionPropsProvider = providers.fileContents(
-        rootProject.layout.projectDirectory.file("version.properties")
-    ).asText
-    val versionInfoProvider = versionPropsProvider.map { content ->
-        val props = Properties()
-        content.reader().use { props.load(it) }
-        val code = props.getProperty("versionCode")?.trim()?.toIntOrNull() ?: 1
-        val name = props.getProperty("versionName")?.trim().orEmpty().ifBlank { "0.1.0" }
-        val (major, minor, patch) = parseSemver(name)
-        VersionInfo(code, name, major, minor, patch)
+    val versionInfoProvider = providers.provider {
+        val releaseVersionFile = releaseVersionFileProvider.get().asFile
+        val content = if (releaseVersionFile.exists()) {
+            releaseVersionFile.readText()
+        } else if (versionPropsFile.exists()) {
+            versionPropsFile.readText()
+        } else {
+            ""
+        }
+        readVersionInfoFromText(content)
     }
     val versionCodeProvider = versionInfoProvider.map { it.code }
     val versionNameProvider = versionInfoProvider.map { it.name }
@@ -264,25 +297,44 @@ androidComponents {
     }
 }
 
-val bumpReleaseVersion = tasks.register("bumpReleaseVersion") {
+val prepareAppDistributionReleaseVersion = tasks.register("prepareAppDistributionReleaseVersion") {
     group = "release"
-    description = "Bump versionCode and versionName patch for release builds."
+    description = "Generate the next version for App Distribution without persisting it."
     doLast {
-        val current = readVersionInfo()
+        val releaseVersionFile = releaseVersionFileProvider.get().asFile
+        releaseVersionFile.parentFile.mkdirs()
+        val headCommit = gitOutput(project, "rev-parse", "HEAD")
+        if (releaseVersionFile.exists()) {
+            val (existingInfo, existingCommit) = readVersionInfoWithCommit(releaseVersionFile)
+            val shouldReuse = when {
+                headCommit == null -> true
+                existingCommit == null -> false
+                headCommit == existingCommit -> true
+                else -> false
+            }
+            if (shouldReuse) {
+                logger.lifecycle(
+                    "Reusing App Distribution version ${existingInfo.name} (${existingInfo.code})."
+                )
+                return@doLast
+            }
+        }
+
+        val current = readVersionInfo(versionPropsFile)
         val bumped = bumpPatch(current)
-        writeVersionInfo(bumped)
-        logger.lifecycle("Version bumped to ${bumped.name} (${bumped.code}).")
+        writeReleaseVersionInfo(bumped, releaseVersionFile, headCommit)
+        logger.lifecycle("Prepared App Distribution version ${bumped.name} (${bumped.code}).")
     }
 }
 
 val generateReleaseNotes = tasks.register("generateReleaseNotes") {
     group = "release"
-    description = "Generate release notes and update CHANGELOG.md."
-    dependsOn(bumpReleaseVersion)
+    description = "Generate release notes for App Distribution."
+    dependsOn(prepareAppDistributionReleaseVersion)
     doLast {
-        val current = readVersionInfo()
+        val releaseVersionFile = releaseVersionFileProvider.get().asFile
+        val current = readVersionInfo(releaseVersionFile)
         val versionName = current.name
-        val date = LocalDate.now().toString()
         val releaseNotesFile = releaseNotesFileProvider.get().asFile
 
         val changelogText = if (changelogFile.exists()) changelogFile.readText() else ""
@@ -316,23 +368,12 @@ val generateReleaseNotes = tasks.register("generateReleaseNotes") {
         val formattedNotes = notes.map { it.trimStart('-', ' ').trim() }
         releaseNotesFile.parentFile.mkdirs()
         releaseNotesFile.writeText(formattedNotes.joinToString("\n") { "- $it" } + "\n")
-
-        if (changelogNotes.isNullOrEmpty()) {
-            val entry = buildString {
-                appendLine("## [$versionName] - $date")
-                formattedNotes.forEach { appendLine("- $it") }
-                appendLine()
-            }
-            changelogFile.writeText(
-                upsertChangelogEntry(changelogText, versionName, entry)
-            )
-        }
     }
 }
 
 tasks.register("prepareRelease") {
     group = "release"
-    description = "Bump version, generate release notes, and update CHANGELOG.md without building."
+    description = "Prepare App Distribution release notes and version without building."
     dependsOn(generateReleaseNotes)
 }
 
@@ -389,6 +430,48 @@ tasks.matching {
 }.configureEach {
     dependsOn(verifyReleasePinConfig)
     dependsOn(generateReleaseNotes)
+    doLast {
+        val releaseVersionFile = releaseVersionFileProvider.get().asFile
+        if (!releaseVersionFile.exists()) {
+            throw GradleException(
+                "Release version missing. Run :app:prepareAppDistributionReleaseVersion first."
+            )
+        }
+        val releaseNotesFile = releaseNotesFileProvider.get().asFile
+        if (!releaseNotesFile.exists()) {
+            throw GradleException(
+                "Release notes missing. Run :app:generateReleaseNotes first."
+            )
+        }
+        val releaseInfo = readVersionInfo(releaseVersionFile)
+        writeVersionInfo(releaseInfo, versionPropsFile)
+
+        val date = LocalDate.now().toString()
+        val releaseNotes = releaseNotesFile.readLines()
+            .map { it.trim() }
+            .filter { it.startsWith("- ") }
+            .map { it.removePrefix("- ").trim() }
+        val entry = buildString {
+            appendLine("## [${releaseInfo.name}] - $date")
+            releaseNotes.forEach { appendLine("- $it") }
+            appendLine()
+        }
+        val changelogText = if (changelogFile.exists()) changelogFile.readText() else ""
+        changelogFile.writeText(
+            upsertChangelogEntry(changelogText, releaseInfo.name, entry)
+        )
+    }
+}
+
+val appDistributionReleaseRequested = gradle.startParameter.taskNames.any {
+    it.contains("appDistributionUploadRelease")
+}
+if (appDistributionReleaseRequested) {
+    tasks.matching {
+        it.name in setOf("assembleRelease", "bundleRelease")
+    }.configureEach {
+        dependsOn(prepareAppDistributionReleaseVersion)
+    }
 }
 
 tasks.matching {
