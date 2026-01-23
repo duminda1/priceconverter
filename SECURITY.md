@@ -85,6 +85,10 @@ echo | openssl s_client -showcerts -servername "$HOST" -connect "$HOST:443" 2>/d
 
 Repeat the same commands with `HOST=api.frankfurter.app`.
 
+Automation:
+- Run `scripts/generate_pins.sh --out /tmp/pins.env` to generate pins in KEY=VALUE format.
+- Set `PINS_FILE=/tmp/pins.env` when running release builds, or export the two pin variables.
+
 Rotation strategy:
 - Keep two pins per host (current leaf + current intermediate).
 - Recompute pins on CA changes or before the leaf certificate expires.
