@@ -1,0 +1,50 @@
+package com.pockettoolsstudio.pocketcurrency.ui
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.pockettoolsstudio.pocketcurrency.ui.screen.HelpScreen
+import com.pockettoolsstudio.pocketcurrency.ui.screen.MainScreen
+import com.pockettoolsstudio.pocketcurrency.ui.screen.SettingsScreen
+import com.pockettoolsstudio.pocketcurrency.viewmodel.MainViewModel
+import com.pockettoolsstudio.pocketcurrency.viewmodel.MainSettingsViewModel
+import com.pockettoolsstudio.pocketcurrency.viewmodel.ScanViewModel
+import com.pockettoolsstudio.pocketcurrency.viewmodel.SettingsViewModel
+
+@Composable
+fun PocketCurrencyNavGraph(
+    mainViewModel: MainViewModel,
+    mainSettingsViewModel: MainSettingsViewModel,
+    scanViewModel: ScanViewModel,
+    settingsViewModel: SettingsViewModel,
+    modifier: Modifier = Modifier
+) {
+    val navController: NavHostController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination = Screen.Main.route,
+        modifier = modifier
+    ) {
+        composable(Screen.Main.route) {
+            MainScreen(
+                conversionViewModel = mainViewModel,
+                settingsViewModel = mainSettingsViewModel,
+                scanViewModel = scanViewModel,
+                navController = navController // pass navController
+            )
+        }
+        composable(Screen.Settings.route) {
+            SettingsScreen(
+                viewModel = settingsViewModel,
+                navController = navController // pass navController
+            )
+        }
+        composable(Screen.Help.route) {
+            HelpScreen(navController = navController)
+        }
+    }
+}

@@ -23,12 +23,12 @@
 # --- Release shrinker guardrails ---
 # Retrofit reflects on HTTP method/parameter annotations; keep those methods intact.
 -keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations, Signature
--keepclassmembers,allowshrinking,allowobfuscation interface com.pocketcurrency.data.api.** {
+-keepclassmembers,allowshrinking,allowobfuscation interface com.pockettoolsstudio.pocketcurrency.data.api.** {
     @retrofit2.http.* <methods>;
 }
 
 # Gson reflects on fields; keep @SerializedName members so JSON parsing survives obfuscation.
--keepclassmembers class com.pocketcurrency.data.model.** {
+-keepclassmembers class com.pockettoolsstudio.pocketcurrency.data.model.** {
     @com.google.gson.annotations.SerializedName <fields>;
 }
 
