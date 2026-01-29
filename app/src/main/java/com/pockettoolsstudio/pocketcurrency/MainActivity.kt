@@ -1,0 +1,48 @@
+package com.pockettoolsstudio.pocketcurrency
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import com.pockettoolsstudio.pocketcurrency.ui.PocketCurrencyNavGraph
+import com.pockettoolsstudio.pocketcurrency.ui.theme.PocketCurrencyTheme
+import com.pockettoolsstudio.pocketcurrency.viewmodel.MainViewModel
+import com.pockettoolsstudio.pocketcurrency.viewmodel.MainSettingsViewModel
+import com.pockettoolsstudio.pocketcurrency.viewmodel.ScanViewModel
+import com.pockettoolsstudio.pocketcurrency.viewmodel.SettingsViewModel
+import dagger.hilt.android.AndroidEntryPoint
+
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+
+    private val mainViewModel: MainViewModel by viewModels()
+    private val mainSettingsViewModel: MainSettingsViewModel by viewModels()
+    private val scanViewModel: ScanViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel by viewModels()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+
+        setContent {
+            PocketCurrencyTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    PocketCurrencyNavGraph(
+                        mainViewModel = mainViewModel,
+                        mainSettingsViewModel = mainSettingsViewModel,
+                        scanViewModel = scanViewModel,
+                        settingsViewModel = settingsViewModel
+                    )
+                }
+            }
+        }
+    }
+}

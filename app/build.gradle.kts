@@ -199,7 +199,7 @@ plugins {
 }
 
 android {
-    namespace = "com.pocketcurrency"
+    namespace = "com.pockettoolsstudio.pocketcurrency"
     compileSdk = 35
 
     signingConfigs {
@@ -214,7 +214,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.pocketcurrency"
+        applicationId = "com.pockettoolsstudio.pocketcurrency"
         minSdk = 24
         targetSdk = 35
         versionCode = 1

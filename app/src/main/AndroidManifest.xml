@@ -11,7 +11,7 @@
         android:required="false" />
 
     <application
-        android:name=".PocketCurrencyApp"
+        android:name="com.pockettoolsstudio.pocketcurrency.PocketCurrencyApp"
         android:allowBackup="true"
         android:fullBackupContent="@xml/backup_rules"
         android:dataExtractionRules="@xml/data_extraction_rules"
