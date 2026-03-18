@@ -65,7 +65,7 @@ Ensure `local.properties` has your Android SDK path (Android Studio creates this
 1. Open **Device Manager** in Android Studio
 2. Create or start an Android emulator
 3. Select the emulator as the target device
-4. Click **Run ▶**
+4. Click **Run**
 
 ---
 
@@ -75,7 +75,7 @@ Ensure `local.properties` has your Android SDK path (Android Studio creates this
 2. Enable **USB Debugging**
 3. Connect your phone to the computer using a USB cable
 4. Select your device in Android Studio
-5. Click **Run ▶**
+5. Click **Run**
 
 ---
 
